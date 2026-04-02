@@ -43,26 +43,164 @@ html, body, [class*="css"], .stApp {
     font-family: 'Inter', system-ui, -apple-system, sans-serif !important;
 }
 
+/* ===== BACKGROUND — dot grid + green light source ===== */
+.stApp {
+    background-color: #0B1120 !important;
+    background-image:
+        radial-gradient(ellipse 90% 45% at 50% -8%, #10B98116 0%, transparent 60%),
+        radial-gradient(#1B2B4028 1px, transparent 1px) !important;
+    background-size: auto, 24px 24px !important;
+    background-attachment: fixed !important;
+}
+
+/* ===== SECTION HEADINGS (####) ===== */
+h4 {
+    font-size: 0.72rem !important;
+    font-weight: 600 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.09em !important;
+    color: #7A90AD !important;
+    padding-left: 10px !important;
+    border-left: 2px solid #10B981 !important;
+    margin: 24px 0 14px 0 !important;
+    font-family: 'Inter', sans-serif !important;
+}
+h5 {
+    font-size: 0.7rem !important;
+    font-weight: 600 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.08em !important;
+    color: #7A90AD !important;
+    margin: 20px 0 10px 0 !important;
+    font-family: 'Inter', sans-serif !important;
+}
+h3 {
+    font-size: 0.95rem !important;
+    font-weight: 600 !important;
+    color: #D8E4F0 !important;
+    margin-bottom: 4px !important;
+}
+
+/* ===== DIVIDER ===== */
+hr {
+    border: none !important;
+    border-top: 1px solid #1B2B40 !important;
+    margin: 20px 0 !important;
+}
+
 /* ===== APP HEADER ===== */
 .app-header {
     padding: 4px 0 20px 0;
     margin-bottom: 4px;
 }
 .app-wordmark {
-    font-size: 1.1rem;
+    font-size: 1.15rem;
     font-weight: 700;
-    color: #D8E4F0;
-    letter-spacing: -0.01em;
+    background: linear-gradient(120deg, #D8E4F0 30%, #10B981 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    letter-spacing: -0.02em;
     font-family: 'Inter', sans-serif;
+    display: inline-block;
 }
 .app-tagline {
-    font-size: 0.72rem;
-    color: #364C63;
+    font-size: 0.71rem;
+    color: #2A3D52;
     margin-top: 3px;
     text-transform: uppercase;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.07em;
     font-family: 'Inter', sans-serif;
 }
+
+/* ===== HERO (empty dashboard) ===== */
+.hero { padding: 40px 0 32px 0; max-width: 680px; }
+.hero-eyebrow {
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: #10B981;
+    margin-bottom: 20px;
+    font-family: 'Inter', sans-serif;
+}
+.hero-headline {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #D8E4F0;
+    line-height: 1.18;
+    letter-spacing: -0.025em;
+    margin-bottom: 18px;
+    font-family: 'Inter', sans-serif;
+}
+.hero-body {
+    font-size: 0.88rem;
+    color: #7A90AD;
+    line-height: 1.75;
+    margin-bottom: 36px;
+    max-width: 520px;
+    font-family: 'Inter', sans-serif;
+}
+.hero-steps {
+    display: flex;
+    gap: 0;
+    border-top: 1px solid #1B2B40;
+    padding-top: 28px;
+    margin-bottom: 28px;
+}
+.hero-step {
+    flex: 1;
+    padding-right: 28px;
+}
+.hero-step:not(:last-child) {
+    border-right: 1px solid #1B2B40;
+    margin-right: 28px;
+}
+.hs-num {
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: #10B981;
+    letter-spacing: 0.08em;
+    font-family: 'JetBrains Mono', monospace;
+    margin-bottom: 6px;
+}
+.hs-label {
+    font-size: 0.83rem;
+    font-weight: 600;
+    color: #D8E4F0;
+    margin-bottom: 4px;
+    font-family: 'Inter', sans-serif;
+}
+.hs-text {
+    font-size: 0.77rem;
+    color: #364C63;
+    line-height: 1.5;
+    font-family: 'Inter', sans-serif;
+}
+.hero-cta {
+    font-size: 0.8rem;
+    color: #364C63;
+    font-family: 'Inter', sans-serif;
+}
+.hero-cta strong { color: #7A90AD; }
+.hero-ready {
+    padding: 28px 0;
+    border-top: 1px solid #1B2B40;
+}
+.hero-ready-title {
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: #D8E4F0;
+    margin-bottom: 8px;
+    font-family: 'Inter', sans-serif;
+}
+.hero-ready-sub {
+    font-size: 0.8rem;
+    color: #7A90AD;
+    line-height: 1.6;
+    font-family: 'Inter', sans-serif;
+}
+.hero-ready-sub strong { color: #10B981; }
 
 /* ===== STATUS ROW ===== */
 .status-row {
@@ -103,11 +241,15 @@ html, body, [class*="css"], .stApp {
 [data-testid="metric-container"] {
     background: #101A2C;
     border: 1px solid #1B2B40;
+    border-top: 2px solid #10B98130;
     border-radius: 8px;
     padding: 20px 22px;
     transition: border-color 0.15s;
 }
-[data-testid="metric-container"]:hover { border-color: #2A4060; }
+[data-testid="metric-container"]:hover {
+    border-color: #2A4060;
+    border-top-color: #10B98160;
+}
 [data-testid="metric-container"] [data-testid="stMetricValue"] {
     font-family: 'JetBrains Mono', monospace !important;
     font-size: 1.8rem !important;
@@ -352,23 +494,44 @@ with tab_dashboard:
     # ---- Empty states ----
     if not _db_products and not _db_analyses:
         st.markdown("""
-        <div class="empty-state">
-          <div class="es-title">No data loaded</div>
-          <div class="es-hint">
-            Go to <strong>Import</strong>, upload your supplier XLSX or PDF price lists, then confirm &amp; load.
+        <div class="hero">
+          <div class="hero-eyebrow">Skroutz Market Intelligence Platform</div>
+          <div class="hero-headline">Know what to stock.<br>See the margin before you buy.</div>
+          <div class="hero-body">
+            Upload supplier price catalogs, pull live Skroutz.gr market prices, and get
+            clear buy / skip recommendations driven by real margin and competition data.
+            Built for Greek B2B resellers.
           </div>
+          <div class="hero-steps">
+            <div class="hero-step">
+              <div class="hs-num">01</div>
+              <div class="hs-label">Import</div>
+              <div class="hs-text">Upload XLSX or PDF supplier price lists. Bio Tonics and VioGenesis formats supported out of the box.</div>
+            </div>
+            <div class="hero-step">
+              <div class="hs-num">02</div>
+              <div class="hs-label">Scrape</div>
+              <div class="hs-text">Live Skroutz.gr prices fetched per product. Results cached for 24 hours — subsequent runs are instant.</div>
+            </div>
+            <div class="hero-step">
+              <div class="hs-num">03</div>
+              <div class="hs-label">Analyse</div>
+              <div class="hs-text">Gross margin, competition level, and opportunity score for every product. Export to XLSX.</div>
+            </div>
+          </div>
+          <div class="hero-cta">Go to <strong>Import</strong> to get started.</div>
         </div>
         """, unsafe_allow_html=True)
 
     elif _db_products and not _db_analyses:
+        _n_sup = len({p.source for p in _db_products})
         st.markdown(f"""
-        <div class="empty-state">
-          <div class="es-title">Products loaded — no market data yet</div>
-          <div class="es-hint">
-            <strong>{len(_db_products)} products</strong> from
-            <strong>{len({p.source for p in _db_products})} supplier(s)</strong> are ready.
-            Go to <strong>Scrape</strong> to fetch Skroutz prices,
-            or use <strong>Cache Only</strong> if you have cached results.
+        <div class="hero-ready">
+          <div class="hero-ready-title">Catalog loaded &mdash; ready to price.</div>
+          <div class="hero-ready-sub">
+            <strong>{len(_db_products)} products</strong> across {_n_sup} supplier(s) are staged.
+            Go to <strong>Scrape</strong> to fetch live Skroutz prices,
+            or use <strong>Use Cache Only</strong> if you have results from a previous run.
           </div>
         </div>
         """, unsafe_allow_html=True)
@@ -750,6 +913,7 @@ with tab_scrape:
                 headless=headless,
                 delay=delay,
                 on_status=lambda msg: _SB.log.append(msg),
+                debug_dir="cache/debug",
             )
             # Reset buffer for this run
             _SB.scraper  = scraper

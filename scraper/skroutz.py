@@ -225,13 +225,29 @@ class SkroutzScraper:
         self._pw = sync_playwright().start()
         self._browser = self._pw.chromium.launch(
             headless=self.headless,
-            args=["--disable-blink-features=AutomationControlled"],
+            args=[
+                "--disable-blink-features=AutomationControlled",
+                "--no-sandbox",
+                "--disable-dev-shm-usage",
+                "--disable-gpu",
+                "--disable-extensions",
+            ],
         )
         context = self._browser.new_context(
             user_agent=_UA,
             viewport={"width": 1920, "height": 1080},
             locale="el-GR",
+            extra_http_headers={
+                "Accept-Language": "el-GR,el;q=0.9,en-US;q=0.8,en;q=0.7",
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+            },
         )
+        context.add_init_script("""
+            Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
+            Object.defineProperty(navigator, 'plugins', { get: () => [1, 2, 3, 4, 5] });
+            Object.defineProperty(navigator, 'languages', { get: () => ['el-GR', 'el', 'en-US', 'en'] });
+            window.chrome = { runtime: {} };
+        """)
         self._page = context.new_page()
 
         # Initial visit to establish session
