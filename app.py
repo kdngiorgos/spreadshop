@@ -32,205 +32,221 @@ st.set_page_config(
 )
 
 # ---------------------------------------------------------------------------
-# CSS — Professional B2B SaaS finish
+# CSS — Commerce Intelligence design system
 # ---------------------------------------------------------------------------
 st.markdown("""
 <style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap');
+
 /* ===== BASE TYPOGRAPHY ===== */
-html, body, [class*="css"] {
-    font-family: 'JetBrains Mono', 'Consolas', monospace;
+html, body, [class*="css"], .stApp {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif !important;
 }
 
 /* ===== STATUS BAR ===== */
 .status-bar {
     display: flex;
     align-items: center;
-    gap: 20px;
-    background: #111318;
-    border: 1px solid #2D3148;
-    border-radius: 8px;
-    padding: 9px 18px;
-    margin-bottom: 14px;
-    font-size: 0.78rem;
-    color: #9CA3AF;
+    gap: 10px;
+    margin-bottom: 16px;
     flex-wrap: wrap;
+}
+.status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    background: #0F1623;
+    border: 1px solid #1E2D45;
+    border-radius: 20px;
+    padding: 5px 14px;
+    font-size: 0.77rem;
+    color: #94A3B8;
+    font-family: 'Inter', sans-serif;
 }
 .status-dot {
     display: inline-block;
-    width: 7px; height: 7px;
+    width: 6px; height: 6px;
     border-radius: 50%;
-    margin-right: 5px;
-    vertical-align: middle;
+    flex-shrink: 0;
 }
-.status-dot-green { background: #22C55E; box-shadow: 0 0 5px #22C55E99; }
-.status-dot-grey  { background: #4B5563; }
-.status-bar strong { color: #E2E8F0; }
-.status-sep { color: #2D3148; }
+.status-dot-green { background: #10B981; box-shadow: 0 0 6px #10B98166; }
+.status-dot-grey  { background: #334155; }
+.status-pill strong { color: #F1F5F9; font-weight: 600; }
 
 /* ===== METRIC CARDS ===== */
 [data-testid="metric-container"] {
-    background: linear-gradient(135deg, #1A1D27 0%, #1E2135 100%);
-    border: 1px solid #2D3148;
-    border-radius: 10px;
-    padding: 16px 20px;
-    transition: border-color 0.2s;
+    background: #0F1623;
+    border: 1px solid #1E2D45;
+    border-radius: 12px;
+    padding: 20px 24px;
+    transition: border-color 0.2s, box-shadow 0.2s;
 }
-[data-testid="metric-container"]:hover { border-color: #6366F1; }
+[data-testid="metric-container"]:hover {
+    border-color: #10B981;
+    box-shadow: 0 0 20px #10B98118;
+}
 [data-testid="metric-container"] [data-testid="stMetricValue"] {
-    font-size: 1.85rem;
-    color: #6366F1;
+    font-family: 'JetBrains Mono', monospace !important;
+    font-size: 1.9rem !important;
+    color: #10B981;
     font-weight: 700;
 }
 [data-testid="metric-container"] [data-testid="stMetricLabel"] {
-    color: #9CA3AF;
-    font-size: 0.75rem;
+    color: #94A3B8;
+    font-size: 0.73rem;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.06em;
+    font-family: 'Inter', sans-serif !important;
 }
 
-/* ===== TABS — navigation style ===== */
+/* ===== TABS ===== */
 [data-baseweb="tab-list"] {
-    gap: 2px;
-    border-bottom: 2px solid #2D3148;
+    gap: 0;
+    border-bottom: 1px solid #1E2D45 !important;
+    background: transparent !important;
 }
 [data-baseweb="tab"] {
     background: transparent !important;
-    border-radius: 6px 6px 0 0 !important;
-    padding: 10px 22px !important;
-    border: 1px solid transparent !important;
-    border-bottom: none !important;
-    color: #6B7280 !important;
+    border-radius: 0 !important;
+    padding: 10px 20px !important;
+    border: none !important;
+    border-bottom: 2px solid transparent !important;
+    color: #475569 !important;
     font-size: 0.83rem;
-    transition: color 0.15s, background 0.15s;
+    font-family: 'Inter', sans-serif !important;
+    font-weight: 500;
+    transition: color 0.15s;
 }
-[data-baseweb="tab"]:hover {
-    background: #1A1D2777 !important;
-    color: #E2E8F0 !important;
-}
+[data-baseweb="tab"]:hover { color: #94A3B8 !important; }
 [aria-selected="true"][data-baseweb="tab"] {
-    background: #1A1D27 !important;
-    border-color: #2D3148 #2D3148 #1A1D27 #2D3148 !important;
-    color: #6366F1 !important;
+    border-bottom-color: #10B981 !important;
+    color: #F1F5F9 !important;
+    font-weight: 600;
 }
 
 /* ===== BADGES ===== */
-.badge-strong  { background:#052E16; color:#86EFAC; padding:3px 10px; border-radius:5px; font-size:0.75rem; border:1px solid #16A34A88; box-shadow:0 0 8px #16A34A33; font-weight:600; }
-.badge-consider{ background:#1C1500; color:#FCD34D; padding:3px 10px; border-radius:5px; font-size:0.75rem; border:1px solid #CA8A0455; }
-.badge-skip    { background:#1C0000; color:#FCA5A5; padding:3px 10px; border-radius:5px; font-size:0.75rem; border:1px solid #DC262655; }
-.badge-nf      { background:#1A1D27; color:#9CA3AF; padding:3px 10px; border-radius:5px; font-size:0.75rem; border:1px solid #2D3148; }
+.badge-strong   { background:#064E3B; color:#6EE7B7; padding:4px 12px; border-radius:20px; font-size:0.72rem; border:1px solid #10B98155; font-weight:600; font-family:'Inter',sans-serif; }
+.badge-consider { background:#2D1A00; color:#FCD34D; padding:4px 12px; border-radius:20px; font-size:0.72rem; border:1px solid #F59E0B55; font-weight:600; font-family:'Inter',sans-serif; }
+.badge-skip     { background:#2D0000; color:#FCA5A5; padding:4px 12px; border-radius:20px; font-size:0.72rem; border:1px solid #EF444455; font-weight:600; font-family:'Inter',sans-serif; }
+.badge-nf       { background:#0F1623; color:#64748B; padding:4px 12px; border-radius:20px; font-size:0.72rem; border:1px solid #1E2D45;   font-weight:600; font-family:'Inter',sans-serif; }
 
 /* ===== OPPORTUNITY CARDS (Dashboard) ===== */
 .opp-card {
-    background: linear-gradient(135deg, #1A1D27 0%, #1E2135 100%);
-    border: 1px solid #2D3148;
-    border-radius: 10px;
-    padding: 14px 16px;
+    background: #0F1623;
+    border: 1px solid #1E2D45;
+    border-radius: 12px;
+    padding: 16px 18px;
     height: 100%;
     transition: border-color 0.2s, box-shadow 0.2s;
 }
 .opp-card.strong-buy {
-    border-color: #16A34A77;
-    box-shadow: 0 0 12px #16A34A22;
+    border-color: #10B98155;
+    box-shadow: 0 4px 20px #10B98112;
 }
 .opp-card-title {
     font-size: 0.84rem;
-    color: #E2E8F0;
+    color: #F1F5F9;
     font-weight: 600;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    font-family: 'Inter', sans-serif;
 }
-.opp-card-sub { font-size: 0.72rem; color: #6B7280; margin-top: 3px; }
-.opp-card-metrics { display: flex; gap: 14px; margin-top: 10px; }
-.opp-card-metrics .m-label { font-size: 0.68rem; color: #6B7280; }
-.opp-card-metrics .m-value { font-size: 0.9rem; font-weight: 700; color: #6366F1; }
-.opp-card-metrics .m-value.green { color: #22C55E; }
+.opp-card-sub { font-size: 0.72rem; color: #475569; margin-top: 3px; font-family: 'Inter', sans-serif; }
+.opp-card-metrics { display: flex; gap: 16px; margin-top: 12px; }
+.opp-card-metrics .m-label { font-size: 0.67rem; color: #475569; text-transform: uppercase; letter-spacing: 0.05em; font-family: 'Inter', sans-serif; }
+.opp-card-metrics .m-value { font-size: 0.92rem; font-weight: 700; color: #10B981; font-family: 'JetBrains Mono', monospace; }
+.opp-card-metrics .m-value.green { color: #10B981; }
 .opp-card-metrics .m-value.amber { color: #F59E0B; }
 .opp-card-metrics .m-value.red   { color: #EF4444; }
-.opp-card-footer { margin-top: 10px; display: flex; align-items: center; gap: 8px; }
+.opp-card-footer { margin-top: 12px; display: flex; align-items: center; gap: 8px; }
 
 /* ===== INVEST BOX (Dashboard) ===== */
 .invest-box {
-    background: linear-gradient(135deg, #0F1923 0%, #141824 100%);
-    border: 1px solid #6366F133;
+    background: #0F1623;
+    border: 1px solid #10B98133;
     border-radius: 12px;
-    padding: 18px 24px;
+    padding: 20px 24px;
     margin: 4px 0 20px 0;
 }
 .invest-box-title {
-    font-size: 0.75rem;
+    font-size: 0.73rem;
     text-transform: uppercase;
-    letter-spacing: 0.07em;
-    color: #6366F1;
-    margin-bottom: 12px;
+    letter-spacing: 0.08em;
+    color: #10B981;
+    margin-bottom: 14px;
     font-weight: 700;
+    font-family: 'Inter', sans-serif;
 }
 .invest-row {
     display: flex;
     justify-content: space-between;
     align-items: baseline;
-    padding: 5px 0;
-    border-bottom: 1px solid #2D314822;
+    padding: 7px 0;
+    border-bottom: 1px solid #1E2D4555;
     font-size: 0.84rem;
 }
 .invest-row:last-child { border-bottom: none; }
-.invest-row .ir-label { color: #9CA3AF; }
-.invest-row .ir-value { color: #E2E8F0; font-weight: 700; }
-.invest-row .ir-value.green { color: #22C55E; }
-.invest-row .ir-value.accent { color: #6366F1; }
+.invest-row .ir-label { color: #94A3B8; font-family: 'Inter', sans-serif; }
+.invest-row .ir-value { color: #F1F5F9; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
+.invest-row .ir-value.green  { color: #10B981; }
+.invest-row .ir-value.accent { color: #10B981; }
 
 /* ===== SUMMARY BOXES (Analysis tab) ===== */
 .summary-box {
-    background: #111318;
-    border: 1px solid #2D3148;
-    border-radius: 10px;
-    padding: 14px 18px;
+    background: #0F1623;
+    border: 1px solid #1E2D45;
+    border-radius: 12px;
+    padding: 18px 20px;
     text-align: center;
 }
-.summary-box .sb-value { font-size: 1.5rem; font-weight: 700; color: #6366F1; }
-.summary-box .sb-value.green { color: #22C55E; }
-.summary-box .sb-label { font-size: 0.68rem; color: #6B7280; text-transform: uppercase; letter-spacing: 0.07em; margin-top: 4px; }
-.summary-box .sb-sub { font-size: 0.78rem; color: #9CA3AF; margin-top: 6px; }
+.summary-box .sb-value { font-size: 1.55rem; font-weight: 700; color: #10B981; font-family: 'JetBrains Mono', monospace; }
+.summary-box .sb-value.green { color: #10B981; }
+.summary-box .sb-label { font-size: 0.68rem; color: #475569; text-transform: uppercase; letter-spacing: 0.07em; margin-top: 6px; font-family: 'Inter', sans-serif; }
+.summary-box .sb-sub { font-size: 0.78rem; color: #94A3B8; margin-top: 8px; font-family: 'Inter', sans-serif; }
 
 /* ===== SUPPLIER CARDS (Import tab) ===== */
 .supplier-card {
-    background: #1A1D27;
-    border: 1px solid #2D3148;
-    border-radius: 8px;
-    padding: 12px 16px;
+    background: #0F1623;
+    border: 1px solid #1E2D45;
+    border-radius: 10px;
+    padding: 13px 18px;
     display: flex;
     align-items: center;
     gap: 14px;
     margin-bottom: 8px;
 }
-.sc-icon { font-size: 1.5rem; line-height: 1; flex-shrink: 0; }
-.sc-name { font-size: 0.88rem; color: #E2E8F0; font-weight: 600; }
-.sc-meta { font-size: 0.72rem; color: #6B7280; margin-top: 2px; }
-.sc-badge { margin-left: auto; font-size: 0.72rem; padding: 3px 10px; border-radius: 5px; white-space: nowrap; flex-shrink: 0; }
-.sc-badge-ok   { background:#052E16; color:#86EFAC; border:1px solid #16A34A55; }
-.sc-badge-warn { background:#1C1500; color:#FCD34D; border:1px solid #CA8A0455; }
-.sc-badge-err  { background:#1C0000; color:#FCA5A5; border:1px solid #DC262655; }
+.sc-icon { font-size: 1.4rem; line-height: 1; flex-shrink: 0; }
+.sc-name { font-size: 0.87rem; color: #F1F5F9; font-weight: 600; font-family: 'Inter', sans-serif; }
+.sc-meta { font-size: 0.72rem; color: #475569; margin-top: 2px; font-family: 'Inter', sans-serif; }
+.sc-badge { margin-left: auto; font-size: 0.72rem; padding: 4px 12px; border-radius: 20px; white-space: nowrap; flex-shrink: 0; font-weight: 600; font-family: 'Inter', sans-serif; }
+.sc-badge-ok   { background:#064E3B; color:#6EE7B7; border:1px solid #10B98155; }
+.sc-badge-warn { background:#2D1A00; color:#FCD34D; border:1px solid #F59E0B55; }
+.sc-badge-err  { background:#2D0000; color:#FCA5A5; border:1px solid #EF444455; }
 
 /* ===== EMPTY STATE ===== */
 .empty-state {
     text-align: center;
-    padding: 56px 24px;
-    color: #6B7280;
+    padding: 64px 24px;
+    color: #475569;
 }
-.es-icon  { font-size: 3rem; margin-bottom: 14px; }
-.es-title { font-size: 1.05rem; color: #9CA3AF; font-weight: 600; margin-bottom: 10px; }
-.es-hint  { font-size: 0.82rem; line-height: 1.6; }
+.es-icon  { font-size: 2.8rem; margin-bottom: 16px; opacity: 0.7; }
+.es-title { font-size: 1.05rem; color: #94A3B8; font-weight: 600; margin-bottom: 10px; font-family: 'Inter', sans-serif; }
+.es-hint  { font-size: 0.84rem; line-height: 1.7; color: #475569; font-family: 'Inter', sans-serif; }
+.es-hint strong { color: #94A3B8; }
 
 /* ===== SCRAPE LOG ===== */
 .scrape-log {
-    background: #0a0c12;
-    border: 1px solid #2D3148;
-    border-radius: 6px;
-    padding: 12px;
-    font-size: 0.8rem;
-    color: #9CA3AF;
-    max-height: 200px;
+    background: #070C16;
+    border: 1px solid #1E2D45;
+    border-radius: 8px;
+    padding: 14px;
+    font-size: 0.78rem;
+    color: #94A3B8;
+    max-height: 220px;
     overflow-y: auto;
+    font-family: 'JetBrains Mono', monospace;
+    line-height: 1.6;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -292,11 +308,9 @@ _opp_txt = (
 
 st.markdown(f"""
 <div class="status-bar">
-  <span><span class="status-dot {_dot_data}"></span>{_data_txt}</span>
-  <span class="status-sep">|</span>
-  <span><span class="status-dot {_dot_scrape}"></span>{_scrape_txt}</span>
-  <span class="status-sep">|</span>
-  <span>{_opp_txt}</span>
+  <span class="status-pill"><span class="status-dot {_dot_data}"></span>{_data_txt}</span>
+  <span class="status-pill"><span class="status-dot {_dot_scrape}"></span>{_scrape_txt}</span>
+  <span class="status-pill">{_opp_txt}</span>
 </div>
 """, unsafe_allow_html=True)
 
@@ -393,7 +407,7 @@ with tab_dashboard:
 
         _badge_cls  = {"strong_buy": "badge-strong", "consider": "badge-consider", "skip": "badge-skip", "not_found": "badge-nf"}
         _badge_lbl  = {"strong_buy": "Strong Buy",   "consider": "Consider",       "skip": "Skip",       "not_found": "Not Found"}
-        _comp_color = {"Low": "#22C55E", "Medium": "#F59E0B", "High": "#EF4444", "—": "#6B7280"}
+        _comp_color = {"Low": "#10B981", "Medium": "#F59E0B", "High": "#EF4444", "—": "#475569"}
         _comp_cls   = {"Low": "green",   "Medium": "amber",   "High": "red",     "—": ""}
 
         for col, a in zip(_t5_cols, _top5):
@@ -401,7 +415,7 @@ with tab_dashboard:
             _card_extra = "strong-buy" if a.recommendation == "strong_buy" else ""
             _link = (
                 f'<a href="{s.product_url}" target="_blank" '
-                f'style="font-size:0.7rem;color:#6366F1;text-decoration:none;">↗ Skroutz</a>'
+                f'style="font-size:0.72rem;color:#3B82F6;text-decoration:none;font-family:Inter,sans-serif;">↗ Skroutz</a>'
                 if s.found and s.product_url else ""
             )
             _mg_str = f"{a.margin_pct:+.1f}%" if s.found else "—"
@@ -444,16 +458,17 @@ with tab_dashboard:
                 _fig_bar = px.bar(
                     _cat_rows, x="Avg Margin %", y="Category", orientation="h",
                     color="Avg Margin %",
-                    color_continuous_scale=["#EF4444", "#F59E0B", "#22C55E"],
+                    color_continuous_scale=["#EF4444", "#F59E0B", "#10B981"],
                     template="plotly_dark",
                     height=max(260, len(_cat_rows) * 34 + 60),
                 )
                 _fig_bar.update_layout(
                     margin=dict(l=0, r=0, t=0, b=0),
-                    paper_bgcolor="#1A1D27", plot_bgcolor="#1A1D27",
+                    paper_bgcolor="#0F1623", plot_bgcolor="#0A0F1E",
                     coloraxis_showscale=False,
-                    font=dict(family="Consolas", size=11, color="#9CA3AF"),
-                    yaxis=dict(autorange="reversed"),
+                    font=dict(family="Inter, sans-serif", size=11, color="#94A3B8"),
+                    yaxis=dict(autorange="reversed", gridcolor="#1E2D45"),
+                    xaxis=dict(gridcolor="#1E2D45", zeroline=False),
                 )
                 _fig_bar.update_traces(marker_line_width=0)
                 st.plotly_chart(_fig_bar, use_container_width=True)
@@ -468,14 +483,14 @@ with tab_dashboard:
                 _fig_pie = px.pie(
                     _comp_df, names="Level", values="Count",
                     color="Level",
-                    color_discrete_map={"Low": "#22C55E", "Medium": "#F59E0B", "High": "#EF4444"},
+                    color_discrete_map={"Low": "#10B981", "Medium": "#F59E0B", "High": "#EF4444"},
                     template="plotly_dark", hole=0.44, height=290,
                 )
                 _fig_pie.update_layout(
                     margin=dict(l=0, r=0, t=0, b=30),
-                    paper_bgcolor="#1A1D27",
-                    font=dict(family="Consolas", size=11, color="#9CA3AF"),
-                    legend=dict(orientation="h", y=-0.12),
+                    paper_bgcolor="#0F1623",
+                    font=dict(family="Inter, sans-serif", size=11, color="#94A3B8"),
+                    legend=dict(orientation="h", y=-0.12, bgcolor="rgba(0,0,0,0)"),
                 )
                 _fig_pie.update_traces(textinfo="percent+label", textfont_size=11)
                 st.plotly_chart(_fig_pie, use_container_width=True)
@@ -1038,10 +1053,10 @@ with tab_analysis:
             if _scatter_data:
                 import plotly.express as px
                 _cmap = {
-                    "✅ Strong Buy": "#22C55E",
+                    "✅ Strong Buy": "#10B981",
                     "🟡 Consider":  "#F59E0B",
                     "❌ Skip":      "#EF4444",
-                    "⚪ Not Found": "#6B7280",
+                    "⚪ Not Found": "#475569",
                 }
                 _fig_sc = px.scatter(  # noqa: F821
                     _scatter_data,
@@ -1054,18 +1069,18 @@ with tab_analysis:
                     labels={"Shop Count": "No. of Shops (Competition)", "Margin %": "Gross Margin %"},
                 )
                 _fig_sc.add_hline(
-                    y=30, line_dash="dot", line_color="#22C55E55",
+                    y=30, line_dash="dot", line_color="#10B98155",
                     annotation_text="Strong Buy threshold (30%)",
                     annotation_position="top right",
-                    annotation_font_color="#22C55E99",
+                    annotation_font_color="#10B98199",
                 )
                 _fig_sc.update_layout(
-                    paper_bgcolor="#1A1D27", plot_bgcolor="#111318",
-                    font=dict(family="Consolas", size=11, color="#9CA3AF"),
+                    paper_bgcolor="#0F1623", plot_bgcolor="#0A0F1E",
+                    font=dict(family="Inter, sans-serif", size=11, color="#94A3B8"),
                     legend=dict(orientation="h", y=1.05, x=0, bgcolor="rgba(0,0,0,0)"),
                     margin=dict(l=0, r=0, t=30, b=0),
-                    xaxis=dict(gridcolor="#2D3148", zeroline=False),
-                    yaxis=dict(gridcolor="#2D3148", zeroline=True, zerolinecolor="#4B5563"),
+                    xaxis=dict(gridcolor="#1E2D45", zeroline=False),
+                    yaxis=dict(gridcolor="#1E2D45", zeroline=True, zerolinecolor="#1E2D45"),
                 )
                 st.plotly_chart(_fig_sc, use_container_width=True)
                 st.caption("Bubble size = opportunity score. Best picks: upper-left quadrant (high margin, few competitors).")
