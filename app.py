@@ -26,156 +26,176 @@ setup_logging()
 # ---------------------------------------------------------------------------
 st.set_page_config(
     page_title="Spreadshop",
-    page_icon="📊",
+    page_icon=None,
     layout="wide",
     initial_sidebar_state="collapsed",
 )
 
 # ---------------------------------------------------------------------------
-# CSS — Commerce Intelligence design system
+# CSS
 # ---------------------------------------------------------------------------
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap');
 
-/* ===== BASE TYPOGRAPHY ===== */
+/* ===== BASE ===== */
 html, body, [class*="css"], .stApp {
     font-family: 'Inter', system-ui, -apple-system, sans-serif !important;
 }
 
-/* ===== STATUS BAR ===== */
-.status-bar {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 16px;
-    flex-wrap: wrap;
+/* ===== APP HEADER ===== */
+.app-header {
+    padding: 4px 0 20px 0;
+    margin-bottom: 4px;
 }
-.status-pill {
-    display: inline-flex;
-    align-items: center;
-    gap: 7px;
-    background: #0F1623;
-    border: 1px solid #1E2D45;
-    border-radius: 20px;
-    padding: 5px 14px;
-    font-size: 0.77rem;
-    color: #94A3B8;
+.app-wordmark {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #D8E4F0;
+    letter-spacing: -0.01em;
     font-family: 'Inter', sans-serif;
 }
-.status-dot {
-    display: inline-block;
-    width: 6px; height: 6px;
-    border-radius: 50%;
+.app-tagline {
+    font-size: 0.72rem;
+    color: #364C63;
+    margin-top: 3px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-family: 'Inter', sans-serif;
+}
+
+/* ===== STATUS ROW ===== */
+.status-row {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid #1B2B40;
+}
+.sr-item {
+    font-size: 0.74rem;
+    color: #7A90AD;
+    padding-right: 16px;
+    font-family: 'Inter', sans-serif;
+}
+.sr-item strong { color: #B8CDE0; font-weight: 600; }
+.sr-item.sr-accent { color: #10B981; font-weight: 500; }
+.sr-sep {
+    width: 1px;
+    height: 11px;
+    background: #1B2B40;
+    margin-right: 16px;
     flex-shrink: 0;
 }
-.status-dot-green { background: #10B981; box-shadow: 0 0 6px #10B98166; }
-.status-dot-grey  { background: #334155; }
-.status-pill strong { color: #F1F5F9; font-weight: 600; }
+.sr-dot {
+    display: inline-block;
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    margin-right: 6px;
+    vertical-align: middle;
+    position: relative; top: -1px;
+}
+.sr-dot-on  { background: #10B981; }
+.sr-dot-off { background: #2A3D52; }
 
 /* ===== METRIC CARDS ===== */
 [data-testid="metric-container"] {
-    background: #0F1623;
-    border: 1px solid #1E2D45;
-    border-radius: 12px;
-    padding: 20px 24px;
-    transition: border-color 0.2s, box-shadow 0.2s;
+    background: #101A2C;
+    border: 1px solid #1B2B40;
+    border-radius: 8px;
+    padding: 20px 22px;
+    transition: border-color 0.15s;
 }
-[data-testid="metric-container"]:hover {
-    border-color: #10B981;
-    box-shadow: 0 0 20px #10B98118;
-}
+[data-testid="metric-container"]:hover { border-color: #2A4060; }
 [data-testid="metric-container"] [data-testid="stMetricValue"] {
     font-family: 'JetBrains Mono', monospace !important;
-    font-size: 1.9rem !important;
-    color: #10B981;
+    font-size: 1.8rem !important;
+    color: #D8E4F0;
     font-weight: 700;
 }
 [data-testid="metric-container"] [data-testid="stMetricLabel"] {
-    color: #94A3B8;
-    font-size: 0.73rem;
+    color: #7A90AD;
+    font-size: 0.71rem;
     text-transform: uppercase;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.07em;
     font-family: 'Inter', sans-serif !important;
 }
 
 /* ===== TABS ===== */
 [data-baseweb="tab-list"] {
     gap: 0;
-    border-bottom: 1px solid #1E2D45 !important;
+    border-bottom: 1px solid #1B2B40 !important;
     background: transparent !important;
 }
 [data-baseweb="tab"] {
     background: transparent !important;
     border-radius: 0 !important;
-    padding: 10px 20px !important;
+    padding: 9px 18px !important;
     border: none !important;
     border-bottom: 2px solid transparent !important;
-    color: #475569 !important;
-    font-size: 0.83rem;
+    color: #364C63 !important;
+    font-size: 0.8rem;
     font-family: 'Inter', sans-serif !important;
     font-weight: 500;
-    transition: color 0.15s;
+    transition: color 0.12s;
 }
-[data-baseweb="tab"]:hover { color: #94A3B8 !important; }
+[data-baseweb="tab"]:hover { color: #7A90AD !important; }
 [aria-selected="true"][data-baseweb="tab"] {
     border-bottom-color: #10B981 !important;
-    color: #F1F5F9 !important;
+    color: #D8E4F0 !important;
     font-weight: 600;
 }
 
 /* ===== BADGES ===== */
-.badge-strong   { background:#064E3B; color:#6EE7B7; padding:4px 12px; border-radius:20px; font-size:0.72rem; border:1px solid #10B98155; font-weight:600; font-family:'Inter',sans-serif; }
-.badge-consider { background:#2D1A00; color:#FCD34D; padding:4px 12px; border-radius:20px; font-size:0.72rem; border:1px solid #F59E0B55; font-weight:600; font-family:'Inter',sans-serif; }
-.badge-skip     { background:#2D0000; color:#FCA5A5; padding:4px 12px; border-radius:20px; font-size:0.72rem; border:1px solid #EF444455; font-weight:600; font-family:'Inter',sans-serif; }
-.badge-nf       { background:#0F1623; color:#64748B; padding:4px 12px; border-radius:20px; font-size:0.72rem; border:1px solid #1E2D45;   font-weight:600; font-family:'Inter',sans-serif; }
+.badge-strong   { background:#042A1E; color:#34C991; padding:3px 10px; border-radius:4px; font-size:0.71rem; border:1px solid #10B98133; font-weight:600; font-family:'Inter',sans-serif; }
+.badge-consider { background:#211800; color:#D4A017; padding:3px 10px; border-radius:4px; font-size:0.71rem; border:1px solid #D97706333; font-weight:600; font-family:'Inter',sans-serif; }
+.badge-skip     { background:#200808; color:#C87070; padding:3px 10px; border-radius:4px; font-size:0.71rem; border:1px solid #DC262633; font-weight:600; font-family:'Inter',sans-serif; }
+.badge-nf       { background:#0D1520; color:#3D5270; padding:3px 10px; border-radius:4px; font-size:0.71rem; border:1px solid #1B2B40;   font-weight:600; font-family:'Inter',sans-serif; }
 
-/* ===== OPPORTUNITY CARDS (Dashboard) ===== */
+/* ===== OPPORTUNITY CARDS ===== */
 .opp-card {
-    background: #0F1623;
-    border: 1px solid #1E2D45;
-    border-radius: 12px;
+    background: #101A2C;
+    border: 1px solid #1B2B40;
+    border-radius: 8px;
     padding: 16px 18px;
     height: 100%;
-    transition: border-color 0.2s, box-shadow 0.2s;
 }
-.opp-card.strong-buy {
-    border-color: #10B98155;
-    box-shadow: 0 4px 20px #10B98112;
-}
+.opp-card.strong-buy { border-color: #10B98133; }
 .opp-card-title {
-    font-size: 0.84rem;
-    color: #F1F5F9;
+    font-size: 0.83rem;
+    color: #D8E4F0;
     font-weight: 600;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     font-family: 'Inter', sans-serif;
 }
-.opp-card-sub { font-size: 0.72rem; color: #475569; margin-top: 3px; font-family: 'Inter', sans-serif; }
+.opp-card-sub { font-size: 0.71rem; color: #364C63; margin-top: 3px; font-family: 'Inter', sans-serif; }
 .opp-card-metrics { display: flex; gap: 16px; margin-top: 12px; }
-.opp-card-metrics .m-label { font-size: 0.67rem; color: #475569; text-transform: uppercase; letter-spacing: 0.05em; font-family: 'Inter', sans-serif; }
-.opp-card-metrics .m-value { font-size: 0.92rem; font-weight: 700; color: #10B981; font-family: 'JetBrains Mono', monospace; }
+.opp-card-metrics .m-label { font-size: 0.65rem; color: #364C63; text-transform: uppercase; letter-spacing: 0.06em; font-family: 'Inter', sans-serif; margin-bottom: 2px; }
+.opp-card-metrics .m-value { font-size: 0.88rem; font-weight: 700; color: #D8E4F0; font-family: 'JetBrains Mono', monospace; }
 .opp-card-metrics .m-value.green { color: #10B981; }
-.opp-card-metrics .m-value.amber { color: #F59E0B; }
-.opp-card-metrics .m-value.red   { color: #EF4444; }
+.opp-card-metrics .m-value.amber { color: #D97706; }
+.opp-card-metrics .m-value.red   { color: #DC2626; }
 .opp-card-footer { margin-top: 12px; display: flex; align-items: center; gap: 8px; }
 
-/* ===== INVEST BOX (Dashboard) ===== */
+/* ===== INVEST BOX ===== */
 .invest-box {
-    background: #0F1623;
-    border: 1px solid #10B98133;
-    border-radius: 12px;
-    padding: 20px 24px;
+    background: #101A2C;
+    border: 1px solid #1B2B40;
+    border-left: 3px solid #10B981;
+    border-radius: 8px;
+    padding: 18px 22px;
     margin: 4px 0 20px 0;
 }
 .invest-box-title {
-    font-size: 0.73rem;
+    font-size: 0.7rem;
     text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: #10B981;
+    letter-spacing: 0.09em;
+    color: #7A90AD;
     margin-bottom: 14px;
-    font-weight: 700;
+    font-weight: 600;
     font-family: 'Inter', sans-serif;
 }
 .invest-row {
@@ -183,70 +203,68 @@ html, body, [class*="css"], .stApp {
     justify-content: space-between;
     align-items: baseline;
     padding: 7px 0;
-    border-bottom: 1px solid #1E2D4555;
-    font-size: 0.84rem;
+    border-bottom: 1px solid #1B2B40;
+    font-size: 0.83rem;
 }
 .invest-row:last-child { border-bottom: none; }
-.invest-row .ir-label { color: #94A3B8; font-family: 'Inter', sans-serif; }
-.invest-row .ir-value { color: #F1F5F9; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
+.invest-row .ir-label { color: #7A90AD; font-family: 'Inter', sans-serif; }
+.invest-row .ir-value { color: #D8E4F0; font-weight: 600; font-family: 'JetBrains Mono', monospace; }
 .invest-row .ir-value.green  { color: #10B981; }
 .invest-row .ir-value.accent { color: #10B981; }
 
-/* ===== SUMMARY BOXES (Analysis tab) ===== */
+/* ===== SUMMARY BOXES ===== */
 .summary-box {
-    background: #0F1623;
-    border: 1px solid #1E2D45;
-    border-radius: 12px;
+    background: #101A2C;
+    border: 1px solid #1B2B40;
+    border-radius: 8px;
     padding: 18px 20px;
     text-align: center;
 }
-.summary-box .sb-value { font-size: 1.55rem; font-weight: 700; color: #10B981; font-family: 'JetBrains Mono', monospace; }
+.summary-box .sb-value { font-size: 1.5rem; font-weight: 700; color: #D8E4F0; font-family: 'JetBrains Mono', monospace; }
 .summary-box .sb-value.green { color: #10B981; }
-.summary-box .sb-label { font-size: 0.68rem; color: #475569; text-transform: uppercase; letter-spacing: 0.07em; margin-top: 6px; font-family: 'Inter', sans-serif; }
-.summary-box .sb-sub { font-size: 0.78rem; color: #94A3B8; margin-top: 8px; font-family: 'Inter', sans-serif; }
+.summary-box .sb-label { font-size: 0.67rem; color: #364C63; text-transform: uppercase; letter-spacing: 0.08em; margin-top: 6px; font-family: 'Inter', sans-serif; }
+.summary-box .sb-sub { font-size: 0.77rem; color: #7A90AD; margin-top: 8px; font-family: 'Inter', sans-serif; }
 
-/* ===== SUPPLIER CARDS (Import tab) ===== */
+/* ===== SUPPLIER CARDS ===== */
 .supplier-card {
-    background: #0F1623;
-    border: 1px solid #1E2D45;
-    border-radius: 10px;
-    padding: 13px 18px;
+    background: #101A2C;
+    border: 1px solid #1B2B40;
+    border-radius: 8px;
+    padding: 12px 18px;
     display: flex;
     align-items: center;
     gap: 14px;
-    margin-bottom: 8px;
+    margin-bottom: 6px;
 }
-.sc-icon { font-size: 1.4rem; line-height: 1; flex-shrink: 0; }
-.sc-name { font-size: 0.87rem; color: #F1F5F9; font-weight: 600; font-family: 'Inter', sans-serif; }
-.sc-meta { font-size: 0.72rem; color: #475569; margin-top: 2px; font-family: 'Inter', sans-serif; }
-.sc-badge { margin-left: auto; font-size: 0.72rem; padding: 4px 12px; border-radius: 20px; white-space: nowrap; flex-shrink: 0; font-weight: 600; font-family: 'Inter', sans-serif; }
-.sc-badge-ok   { background:#064E3B; color:#6EE7B7; border:1px solid #10B98155; }
-.sc-badge-warn { background:#2D1A00; color:#FCD34D; border:1px solid #F59E0B55; }
-.sc-badge-err  { background:#2D0000; color:#FCA5A5; border:1px solid #EF444455; }
+.sc-type { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #364C63; background: #0B1120; border: 1px solid #1B2B40; border-radius: 3px; padding: 2px 7px; flex-shrink: 0; font-family: 'Inter', sans-serif; }
+.sc-name { font-size: 0.86rem; color: #D8E4F0; font-weight: 600; font-family: 'Inter', sans-serif; }
+.sc-meta { font-size: 0.71rem; color: #364C63; margin-top: 2px; font-family: 'Inter', sans-serif; }
+.sc-badge { margin-left: auto; font-size: 0.7rem; padding: 3px 10px; border-radius: 4px; white-space: nowrap; flex-shrink: 0; font-weight: 600; font-family: 'Inter', sans-serif; }
+.sc-badge-ok   { background:#042A1E; color:#34C991; border:1px solid #10B98133; }
+.sc-badge-warn { background:#211800; color:#D4A017; border:1px solid #D9770633; }
+.sc-badge-err  { background:#200808; color:#C87070; border:1px solid #DC262633; }
 
 /* ===== EMPTY STATE ===== */
 .empty-state {
-    text-align: center;
-    padding: 64px 24px;
-    color: #475569;
+    padding: 60px 0 40px 0;
+    color: #364C63;
 }
-.es-icon  { font-size: 2.8rem; margin-bottom: 16px; opacity: 0.7; }
-.es-title { font-size: 1.05rem; color: #94A3B8; font-weight: 600; margin-bottom: 10px; font-family: 'Inter', sans-serif; }
-.es-hint  { font-size: 0.84rem; line-height: 1.7; color: #475569; font-family: 'Inter', sans-serif; }
-.es-hint strong { color: #94A3B8; }
+.es-title { font-size: 0.88rem; color: #7A90AD; font-weight: 600; margin-bottom: 8px; font-family: 'Inter', sans-serif; }
+.es-hint  { font-size: 0.8rem; line-height: 1.7; color: #364C63; font-family: 'Inter', sans-serif; }
+.es-hint strong { color: #7A90AD; }
 
 /* ===== SCRAPE LOG ===== */
 .scrape-log {
-    background: #070C16;
-    border: 1px solid #1E2D45;
-    border-radius: 8px;
-    padding: 14px;
-    font-size: 0.78rem;
-    color: #94A3B8;
+    background: #080F1C;
+    border: 1px solid #1B2B40;
+    border-radius: 6px;
+    padding: 12px 14px;
+    font-size: 0.76rem;
+    color: #7A90AD;
     max-height: 220px;
     overflow-y: auto;
     font-family: 'JetBrains Mono', monospace;
-    line-height: 1.6;
+    line-height: 1.65;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -274,15 +292,15 @@ _init_state()
 # ---------------------------------------------------------------------------
 # Header
 # ---------------------------------------------------------------------------
-col_logo, col_title = st.columns([1, 9])
-with col_logo:
-    st.markdown("## 📊")
-with col_title:
-    st.markdown("## Spreadshop")
-    st.caption("Skroutz Market Intelligence · B2B Reseller Analysis Tool")
+st.markdown("""
+<div class="app-header">
+  <div class="app-wordmark">Spreadshop</div>
+  <div class="app-tagline">Market Intelligence &mdash; B2B Reseller Analysis</div>
+</div>
+""", unsafe_allow_html=True)
 
 # ---------------------------------------------------------------------------
-# Status bar
+# Status row
 # ---------------------------------------------------------------------------
 _products_sb   = st.session_state["products"]
 _analyses_sb   = st.session_state["analyses"]
@@ -290,37 +308,35 @@ _last_scraped  = st.session_state["last_scraped_at"]
 
 _n_prod = len(_products_sb)
 _n_sup  = len({p.source for p in _products_sb}) if _products_sb else 0
-_dot_data = "status-dot-green" if _products_sb else "status-dot-grey"
+_dot_data = "sr-dot-on" if _products_sb else "sr-dot-off"
 _data_txt = (
-    f"<strong>{_n_prod} products</strong> · {_n_sup} supplier(s)"
-    if _products_sb else "<strong>No data loaded</strong>"
+    f"<strong>{_n_prod} products</strong> &middot; {_n_sup} supplier(s)"
+    if _products_sb else "No data loaded"
 )
-_dot_scrape = "status-dot-green" if _last_scraped else "status-dot-grey"
+_dot_scrape = "sr-dot-on" if _last_scraped else "sr-dot-off"
 _scrape_txt = (
     f"Last scraped <strong>{_last_scraped.strftime('%d %b %Y %H:%M')}</strong>"
-    if _last_scraped else "Not scraped yet"
+    if _last_scraped else "Not scraped"
 )
 _n_strong = sum(1 for a in _analyses_sb if a.recommendation == "strong_buy")
-_opp_txt = (
-    f"<strong>{_n_strong}</strong> strong buy opportunities"
-    if _analyses_sb else "—"
-)
+_opp_txt  = f"<strong>{_n_strong}</strong> strong buy" if _analyses_sb else "&mdash;"
+_opp_cls  = "sr-accent" if _analyses_sb and _n_strong > 0 else ""
 
 st.markdown(f"""
-<div class="status-bar">
-  <span class="status-pill"><span class="status-dot {_dot_data}"></span>{_data_txt}</span>
-  <span class="status-pill"><span class="status-dot {_dot_scrape}"></span>{_scrape_txt}</span>
-  <span class="status-pill">{_opp_txt}</span>
+<div class="status-row">
+  <span class="sr-item"><span class="sr-dot {_dot_data}"></span>{_data_txt}</span>
+  <span class="sr-sep"></span>
+  <span class="sr-item"><span class="sr-dot {_dot_scrape}"></span>{_scrape_txt}</span>
+  <span class="sr-sep"></span>
+  <span class="sr-item {_opp_cls}">{_opp_txt}</span>
 </div>
 """, unsafe_allow_html=True)
-
-st.divider()
 
 # ---------------------------------------------------------------------------
 # Tabs
 # ---------------------------------------------------------------------------
 tab_dashboard, tab_import, tab_products, tab_scrape, tab_analysis = st.tabs([
-    "🏠  Dashboard", "📁  Import", "🧾  Products", "🔍  Scrape", "📈  Analysis"
+    "Dashboard", "Import", "Products", "Scrape", "Analysis"
 ])
 
 
@@ -337,11 +353,9 @@ with tab_dashboard:
     if not _db_products and not _db_analyses:
         st.markdown("""
         <div class="empty-state">
-          <div class="es-icon">📂</div>
-          <div class="es-title">No data loaded yet</div>
+          <div class="es-title">No data loaded</div>
           <div class="es-hint">
-            Switch to the <strong>Import</strong> tab, upload your supplier
-            XLSX or PDF price lists, then confirm &amp; load.
+            Go to <strong>Import</strong>, upload your supplier XLSX or PDF price lists, then confirm &amp; load.
           </div>
         </div>
         """, unsafe_allow_html=True)
@@ -349,13 +363,12 @@ with tab_dashboard:
     elif _db_products and not _db_analyses:
         st.markdown(f"""
         <div class="empty-state">
-          <div class="es-icon">🔍</div>
           <div class="es-title">Products loaded — no market data yet</div>
           <div class="es-hint">
             <strong>{len(_db_products)} products</strong> from
-            <strong>{len({p.source for p in _db_products})} supplier(s)</strong> are ready.<br>
-            Switch to <strong>Scrape</strong> to fetch Skroutz prices,
-            or use <strong>Cache Only</strong> if you've scraped before.
+            <strong>{len({p.source for p in _db_products})} supplier(s)</strong> are ready.
+            Go to <strong>Scrape</strong> to fetch Skroutz prices,
+            or use <strong>Cache Only</strong> if you have cached results.
           </div>
         </div>
         """, unsafe_allow_html=True)
@@ -534,7 +547,7 @@ with tab_import:
                     "Type":         f.name.rsplit(".", 1)[-1].upper(),
                     "Products":     len(ps),
                     "Parse Errors": len(es),
-                    "Status":       "✅ OK" if not es else f"⚠️ {len(es)} warnings",
+                    "Status":       "OK" if not es else f"{len(es)} warning(s)",
                 })
             except Exception as exc:
                 summary.append({
@@ -543,7 +556,7 @@ with tab_import:
                     "Type":         "—",
                     "Products":     0,
                     "Parse Errors": 1,
-                    "Status":       f"❌ {exc}",
+                    "Status":       f"Error: {exc}",
                 })
 
         # Unknown supplier warnings
@@ -556,21 +569,20 @@ with tab_import:
         for row in summary:
             _bc = ("sc-badge-ok"
                    if row["Parse Errors"] == 0
-                   else ("sc-badge-err" if "❌" in row["Status"] else "sc-badge-warn"))
-            _ic = "📄" if row["Type"] == "PDF" else "📊"
+                   else ("sc-badge-err" if "Error" in row["Status"] else "sc-badge-warn"))
             st.markdown(f"""
             <div class="supplier-card">
-              <span class="sc-icon">{_ic}</span>
+              <span class="sc-type">{row["Type"]}</span>
               <div>
                 <div class="sc-name">{row["Supplier"]}</div>
-                <div class="sc-meta">{row["File"]} · {row["Type"]} · {row["Products"]} products</div>
+                <div class="sc-meta">{row["File"]} &middot; {row["Products"]} products</div>
               </div>
               <span class="sc-badge {_bc}">{row["Status"]}</span>
             </div>
             """, unsafe_allow_html=True)
 
         if errors:
-            with st.expander(f"⚠️ {len(errors)} parse warnings — click to expand"):
+            with st.expander(f"{len(errors)} parse warning(s)"):
                 st.dataframe(
                     [{"File": e.filename, "Row": e.row, "Reason": e.reason, "Raw": e.raw or ""}
                      for e in errors],
@@ -578,7 +590,7 @@ with tab_import:
                 )
 
         if products:
-            if st.button("✅ Confirm & Load Products", type="primary", use_container_width=True):
+            if st.button("Confirm & Load Products", type="primary", use_container_width=True):
                 st.session_state["products"]      = products
                 st.session_state["parse_errors"]  = errors
                 st.session_state["parse_summary"] = summary
@@ -591,14 +603,13 @@ with tab_import:
         for row in st.session_state.get("parse_summary", []):
             _bc = ("sc-badge-ok"
                    if row["Parse Errors"] == 0
-                   else ("sc-badge-err" if "❌" in row["Status"] else "sc-badge-warn"))
-            _ic = "📄" if row["Type"] == "PDF" else "📊"
+                   else ("sc-badge-err" if "Error" in row["Status"] else "sc-badge-warn"))
             st.markdown(f"""
             <div class="supplier-card">
-              <span class="sc-icon">{_ic}</span>
+              <span class="sc-type">{row["Type"]}</span>
               <div>
                 <div class="sc-name">{row["Supplier"]}</div>
-                <div class="sc-meta">{row["File"]} · {row["Type"]} · {row["Products"]} products</div>
+                <div class="sc-meta">{row["File"]} &middot; {row["Products"]} products</div>
               </div>
               <span class="sc-badge {_bc}">{row["Status"]}</span>
             </div>
@@ -606,10 +617,9 @@ with tab_import:
     else:
         st.markdown("""
         <div class="empty-state">
-          <div class="es-icon">📂</div>
           <div class="es-title">No supplier files loaded</div>
           <div class="es-hint">
-            Drop your <strong>.xlsx</strong> or <strong>.pdf</strong> price lists above.<br>
+            Drop your <strong>.xlsx</strong> or <strong>.pdf</strong> price lists above.
             Supported: <strong>Bio Tonics / Atcare</strong> (XLSX or PDF),
             <strong>VioGenesis</strong> (PDF).
           </div>
@@ -626,7 +636,6 @@ with tab_products:
     if not products_state:
         st.markdown("""
         <div class="empty-state">
-          <div class="es-icon">🧾</div>
           <div class="es-title">No products loaded</div>
           <div class="es-hint">Go to <strong>Import</strong> and upload supplier files first.</div>
         </div>
@@ -704,7 +713,6 @@ with tab_scrape:
     if not products_state:
         st.markdown("""
         <div class="empty-state">
-          <div class="es-icon">🔍</div>
           <div class="es-title">No products to scrape</div>
           <div class="es-hint">Load products from the <strong>Import</strong> tab first.</div>
         </div>
@@ -723,7 +731,7 @@ with tab_scrape:
 
         running = _SB.running
 
-        with st.expander("⚙️ Scrape Settings", expanded=not running):
+        with st.expander("Scrape Settings", expanded=not running):
             col_a, col_b, col_c = st.columns(3)
             delay = col_a.slider("Delay between requests (s)", 3, 12, 5)
             if HEADLESS_MODE:
@@ -760,9 +768,9 @@ with tab_scrape:
 
                 # Selector health check before bulk run
                 ok, hc_msg = scraper.verify_selectors()
-                _SB.log.append(f"{'✅' if ok else '⚠️'} Health check: {hc_msg}")
+                _SB.log.append(f"[{'OK' if ok else 'WARN'}] Health check: {hc_msg}")
                 if not ok:
-                    _SB.log.append("⚠️ Proceeding — results may be incomplete if Skroutz HTML changed.")
+                    _SB.log.append("[WARN] Proceeding — results may be incomplete if Skroutz HTML changed.")
 
                 total = len(products)
                 _SB.total = total
@@ -792,21 +800,21 @@ with tab_scrape:
                         counts["not_found"] += 1
 
             except Exception as exc:
-                _SB.log.append(f"❌ Fatal: {exc}")
+                _SB.log.append(f"[ERROR] Fatal: {exc}")
                 counts["errors"] += 1
             finally:
                 scraper.stop()
                 _SB.scraper     = None
                 _SB.running     = False
                 _SB.scraped_at  = datetime.datetime.now()
-                _SB.log.append("✅ Scrape complete.")
+                _SB.log.append("[OK] Scrape complete.")
                 _SB.analyses_ready = True  # signal UI to pick up results on next rerun
 
         # ------------------------------------------------------------------
         col_btn1, col_btn2, col_btn3 = st.columns(3)
 
         if not running:
-            if col_btn1.button("▶ Start Scraping", type="primary",
+            if col_btn1.button("Start Scraping", type="primary",
                                use_container_width=True, disabled=pending_count == 0):
                 _SB.running = True   # set before thread start to avoid race on first rerun
                 t = threading.Thread(
@@ -817,7 +825,7 @@ with tab_scrape:
                 t.start()
                 st.rerun()
 
-            if col_btn2.button("⚡ Use Cache Only", use_container_width=True,
+            if col_btn2.button("Use Cache Only", use_container_width=True,
                                disabled=cached_count == 0):
                 results = {}
                 for p in products_state:
@@ -830,26 +838,26 @@ with tab_scrape:
                 st.session_state["last_scraped_at"] = datetime.datetime.now()
                 st.success(f"Loaded {len(results)} cached results. Check the **Analysis** tab.")
 
-            if col_btn3.button("🗑 Clear Cache", use_container_width=True):
+            if col_btn3.button("Clear Cache", use_container_width=True):
                 cache.clear()
                 st.session_state["skroutz_results"] = {}
                 st.session_state["analyses"]        = []
                 st.rerun()
         else:
-            if col_btn1.button("⏸ Pause", use_container_width=True):
+            if col_btn1.button("Pause", use_container_width=True):
                 s = _SB.scraper
                 if s:
                     s.pause()
                 st.session_state["scrape_paused"] = True
 
-            if col_btn2.button("▶ Resume", use_container_width=True,
+            if col_btn2.button("Resume", use_container_width=True,
                                disabled=not st.session_state["scrape_paused"]):
                 s = _SB.scraper
                 if s:
                     s.resume()
                 st.session_state["scrape_paused"] = False
 
-            if col_btn3.button("⏹ Stop", use_container_width=True):
+            if col_btn3.button("Stop", use_container_width=True):
                 s = _SB.scraper
                 if s:
                     s.stop()
@@ -886,7 +894,6 @@ with tab_analysis:
     if not products_state:
         st.markdown("""
         <div class="empty-state">
-          <div class="es-icon">📈</div>
           <div class="es-title">No data to analyse</div>
           <div class="es-hint">Load products from <strong>Import</strong>, then scrape or load cached results.</div>
         </div>
@@ -894,7 +901,6 @@ with tab_analysis:
     elif not analyses:
         st.markdown("""
         <div class="empty-state">
-          <div class="es-icon">📈</div>
           <div class="es-title">No analysis data yet</div>
           <div class="es-hint">
             Run the <strong>Scrape</strong> tab (or use <strong>Cache Only</strong>)
@@ -926,6 +932,7 @@ with tab_analysis:
                 "Recommendation",
                 ["strong_buy", "consider", "skip", "not_found"],
                 default=["strong_buy", "consider", "skip", "not_found"],
+                format_func=lambda x: {"strong_buy": "Strong Buy", "consider": "Consider", "skip": "Skip", "not_found": "Not Found"}.get(x, x),
             )
             sup_filter   = st.multiselect(
                 "Supplier",
@@ -977,10 +984,10 @@ with tab_analysis:
 
         # ---- Main dataframe ----
         _rec_labels = {
-            "strong_buy": "✅ Strong Buy",
-            "consider":   "🟡 Consider",
-            "skip":       "❌ Skip",
-            "not_found":  "⚪ Not Found",
+            "strong_buy": "Strong Buy",
+            "consider":   "Consider",
+            "skip":       "Skip",
+            "not_found":  "Not Found",
         }
         rows_a = []
         for a in filtered_a:
@@ -1053,10 +1060,10 @@ with tab_analysis:
             if _scatter_data:
                 import plotly.express as px
                 _cmap = {
-                    "✅ Strong Buy": "#10B981",
-                    "🟡 Consider":  "#F59E0B",
-                    "❌ Skip":      "#EF4444",
-                    "⚪ Not Found": "#475569",
+                    "Strong Buy": "#10B981",
+                    "Consider":  "#D97706",
+                    "Skip":      "#DC2626",
+                    "Not Found": "#364C63",
                 }
                 _fig_sc = px.scatter(  # noqa: F821
                     _scatter_data,
@@ -1092,7 +1099,7 @@ with tab_analysis:
         col_dl1, col_dl2 = st.columns([2, 5])
         xlsx_bytes = generate_xlsx(analyses, st.session_state["parse_errors"])
         col_dl1.download_button(
-            label="⬇ Download XLSX Report",
+            label="Download XLSX Report",
             data=xlsx_bytes,
             file_name="spreadshop_report.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
