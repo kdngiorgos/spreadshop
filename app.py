@@ -1,0 +1,1089 @@
+"""Spreadshop — Skroutz Market Analysis Tool for Resellers."""
+from __future__ import annotations
+
+import datetime
+import threading
+import time
+from collections import Counter, defaultdict
+from pathlib import Path
+from typing import Optional
+
+import streamlit as st
+
+from logger import setup_logging
+from parsers.base import ParseError, ProductRecord, SkroutzResult, parse_file
+from scraper.cache import ScrapeCache
+from scraper.skroutz import SkroutzScraper
+from analysis.compare import ProductAnalysis, analyze
+from analysis.export import generate_xlsx
+from config import HEADLESS_MODE
+import scrape_buffer as _SB
+
+setup_logging()
+
+# ---------------------------------------------------------------------------
+# Page config
+# ---------------------------------------------------------------------------
+st.set_page_config(
+    page_title="Spreadshop",
+    page_icon="📊",
+    layout="wide",
+    initial_sidebar_state="collapsed",
+)
+
+# ---------------------------------------------------------------------------
+# CSS — Professional B2B SaaS finish
+# ---------------------------------------------------------------------------
+st.markdown("""
+<style>
+/* ===== BASE TYPOGRAPHY ===== */
+html, body, [class*="css"] {
+    font-family: 'JetBrains Mono', 'Consolas', monospace;
+}
+
+/* ===== STATUS BAR ===== */
+.status-bar {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    background: #111318;
+    border: 1px solid #2D3148;
+    border-radius: 8px;
+    padding: 9px 18px;
+    margin-bottom: 14px;
+    font-size: 0.78rem;
+    color: #9CA3AF;
+    flex-wrap: wrap;
+}
+.status-dot {
+    display: inline-block;
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    margin-right: 5px;
+    vertical-align: middle;
+}
+.status-dot-green { background: #22C55E; box-shadow: 0 0 5px #22C55E99; }
+.status-dot-grey  { background: #4B5563; }
+.status-bar strong { color: #E2E8F0; }
+.status-sep { color: #2D3148; }
+
+/* ===== METRIC CARDS ===== */
+[data-testid="metric-container"] {
+    background: linear-gradient(135deg, #1A1D27 0%, #1E2135 100%);
+    border: 1px solid #2D3148;
+    border-radius: 10px;
+    padding: 16px 20px;
+    transition: border-color 0.2s;
+}
+[data-testid="metric-container"]:hover { border-color: #6366F1; }
+[data-testid="metric-container"] [data-testid="stMetricValue"] {
+    font-size: 1.85rem;
+    color: #6366F1;
+    font-weight: 700;
+}
+[data-testid="metric-container"] [data-testid="stMetricLabel"] {
+    color: #9CA3AF;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* ===== TABS — navigation style ===== */
+[data-baseweb="tab-list"] {
+    gap: 2px;
+    border-bottom: 2px solid #2D3148;
+}
+[data-baseweb="tab"] {
+    background: transparent !important;
+    border-radius: 6px 6px 0 0 !important;
+    padding: 10px 22px !important;
+    border: 1px solid transparent !important;
+    border-bottom: none !important;
+    color: #6B7280 !important;
+    font-size: 0.83rem;
+    transition: color 0.15s, background 0.15s;
+}
+[data-baseweb="tab"]:hover {
+    background: #1A1D2777 !important;
+    color: #E2E8F0 !important;
+}
+[aria-selected="true"][data-baseweb="tab"] {
+    background: #1A1D27 !important;
+    border-color: #2D3148 #2D3148 #1A1D27 #2D3148 !important;
+    color: #6366F1 !important;
+}
+
+/* ===== BADGES ===== */
+.badge-strong  { background:#052E16; color:#86EFAC; padding:3px 10px; border-radius:5px; font-size:0.75rem; border:1px solid #16A34A88; box-shadow:0 0 8px #16A34A33; font-weight:600; }
+.badge-consider{ background:#1C1500; color:#FCD34D; padding:3px 10px; border-radius:5px; font-size:0.75rem; border:1px solid #CA8A0455; }
+.badge-skip    { background:#1C0000; color:#FCA5A5; padding:3px 10px; border-radius:5px; font-size:0.75rem; border:1px solid #DC262655; }
+.badge-nf      { background:#1A1D27; color:#9CA3AF; padding:3px 10px; border-radius:5px; font-size:0.75rem; border:1px solid #2D3148; }
+
+/* ===== OPPORTUNITY CARDS (Dashboard) ===== */
+.opp-card {
+    background: linear-gradient(135deg, #1A1D27 0%, #1E2135 100%);
+    border: 1px solid #2D3148;
+    border-radius: 10px;
+    padding: 14px 16px;
+    height: 100%;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+.opp-card.strong-buy {
+    border-color: #16A34A77;
+    box-shadow: 0 0 12px #16A34A22;
+}
+.opp-card-title {
+    font-size: 0.84rem;
+    color: #E2E8F0;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.opp-card-sub { font-size: 0.72rem; color: #6B7280; margin-top: 3px; }
+.opp-card-metrics { display: flex; gap: 14px; margin-top: 10px; }
+.opp-card-metrics .m-label { font-size: 0.68rem; color: #6B7280; }
+.opp-card-metrics .m-value { font-size: 0.9rem; font-weight: 700; color: #6366F1; }
+.opp-card-metrics .m-value.green { color: #22C55E; }
+.opp-card-metrics .m-value.amber { color: #F59E0B; }
+.opp-card-metrics .m-value.red   { color: #EF4444; }
+.opp-card-footer { margin-top: 10px; display: flex; align-items: center; gap: 8px; }
+
+/* ===== INVEST BOX (Dashboard) ===== */
+.invest-box {
+    background: linear-gradient(135deg, #0F1923 0%, #141824 100%);
+    border: 1px solid #6366F133;
+    border-radius: 12px;
+    padding: 18px 24px;
+    margin: 4px 0 20px 0;
+}
+.invest-box-title {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: #6366F1;
+    margin-bottom: 12px;
+    font-weight: 700;
+}
+.invest-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 5px 0;
+    border-bottom: 1px solid #2D314822;
+    font-size: 0.84rem;
+}
+.invest-row:last-child { border-bottom: none; }
+.invest-row .ir-label { color: #9CA3AF; }
+.invest-row .ir-value { color: #E2E8F0; font-weight: 700; }
+.invest-row .ir-value.green { color: #22C55E; }
+.invest-row .ir-value.accent { color: #6366F1; }
+
+/* ===== SUMMARY BOXES (Analysis tab) ===== */
+.summary-box {
+    background: #111318;
+    border: 1px solid #2D3148;
+    border-radius: 10px;
+    padding: 14px 18px;
+    text-align: center;
+}
+.summary-box .sb-value { font-size: 1.5rem; font-weight: 700; color: #6366F1; }
+.summary-box .sb-value.green { color: #22C55E; }
+.summary-box .sb-label { font-size: 0.68rem; color: #6B7280; text-transform: uppercase; letter-spacing: 0.07em; margin-top: 4px; }
+.summary-box .sb-sub { font-size: 0.78rem; color: #9CA3AF; margin-top: 6px; }
+
+/* ===== SUPPLIER CARDS (Import tab) ===== */
+.supplier-card {
+    background: #1A1D27;
+    border: 1px solid #2D3148;
+    border-radius: 8px;
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 8px;
+}
+.sc-icon { font-size: 1.5rem; line-height: 1; flex-shrink: 0; }
+.sc-name { font-size: 0.88rem; color: #E2E8F0; font-weight: 600; }
+.sc-meta { font-size: 0.72rem; color: #6B7280; margin-top: 2px; }
+.sc-badge { margin-left: auto; font-size: 0.72rem; padding: 3px 10px; border-radius: 5px; white-space: nowrap; flex-shrink: 0; }
+.sc-badge-ok   { background:#052E16; color:#86EFAC; border:1px solid #16A34A55; }
+.sc-badge-warn { background:#1C1500; color:#FCD34D; border:1px solid #CA8A0455; }
+.sc-badge-err  { background:#1C0000; color:#FCA5A5; border:1px solid #DC262655; }
+
+/* ===== EMPTY STATE ===== */
+.empty-state {
+    text-align: center;
+    padding: 56px 24px;
+    color: #6B7280;
+}
+.es-icon  { font-size: 3rem; margin-bottom: 14px; }
+.es-title { font-size: 1.05rem; color: #9CA3AF; font-weight: 600; margin-bottom: 10px; }
+.es-hint  { font-size: 0.82rem; line-height: 1.6; }
+
+/* ===== SCRAPE LOG ===== */
+.scrape-log {
+    background: #0a0c12;
+    border: 1px solid #2D3148;
+    border-radius: 6px;
+    padding: 12px;
+    font-size: 0.8rem;
+    color: #9CA3AF;
+    max-height: 200px;
+    overflow-y: auto;
+}
+</style>
+""", unsafe_allow_html=True)
+
+# ---------------------------------------------------------------------------
+# Session state
+# ---------------------------------------------------------------------------
+def _init_state() -> None:
+    defaults = {
+        "products": [],
+        "parse_errors": [],
+        "parse_summary": [],
+        "skroutz_results": {},
+        "analyses": [],
+        "scrape_paused": False,    # pause-button toggle (UI only)
+        "last_scraped_at": None,   # datetime | None — set when scrape finishes
+    }
+    for k, v in defaults.items():
+        if k not in st.session_state:
+            st.session_state[k] = v
+
+
+_init_state()
+
+# ---------------------------------------------------------------------------
+# Header
+# ---------------------------------------------------------------------------
+col_logo, col_title = st.columns([1, 9])
+with col_logo:
+    st.markdown("## 📊")
+with col_title:
+    st.markdown("## Spreadshop")
+    st.caption("Skroutz Market Intelligence · B2B Reseller Analysis Tool")
+
+# ---------------------------------------------------------------------------
+# Status bar
+# ---------------------------------------------------------------------------
+_products_sb   = st.session_state["products"]
+_analyses_sb   = st.session_state["analyses"]
+_last_scraped  = st.session_state["last_scraped_at"]
+
+_n_prod = len(_products_sb)
+_n_sup  = len({p.source for p in _products_sb}) if _products_sb else 0
+_dot_data = "status-dot-green" if _products_sb else "status-dot-grey"
+_data_txt = (
+    f"<strong>{_n_prod} products</strong> · {_n_sup} supplier(s)"
+    if _products_sb else "<strong>No data loaded</strong>"
+)
+_dot_scrape = "status-dot-green" if _last_scraped else "status-dot-grey"
+_scrape_txt = (
+    f"Last scraped <strong>{_last_scraped.strftime('%d %b %Y %H:%M')}</strong>"
+    if _last_scraped else "Not scraped yet"
+)
+_n_strong = sum(1 for a in _analyses_sb if a.recommendation == "strong_buy")
+_opp_txt = (
+    f"<strong>{_n_strong}</strong> strong buy opportunities"
+    if _analyses_sb else "—"
+)
+
+st.markdown(f"""
+<div class="status-bar">
+  <span><span class="status-dot {_dot_data}"></span>{_data_txt}</span>
+  <span class="status-sep">|</span>
+  <span><span class="status-dot {_dot_scrape}"></span>{_scrape_txt}</span>
+  <span class="status-sep">|</span>
+  <span>{_opp_txt}</span>
+</div>
+""", unsafe_allow_html=True)
+
+st.divider()
+
+# ---------------------------------------------------------------------------
+# Tabs
+# ---------------------------------------------------------------------------
+tab_dashboard, tab_import, tab_products, tab_scrape, tab_analysis = st.tabs([
+    "🏠  Dashboard", "📁  Import", "🧾  Products", "🔍  Scrape", "📈  Analysis"
+])
+
+
+# ===========================================================================
+# TAB 0 — DASHBOARD
+# ===========================================================================
+with tab_dashboard:
+    import plotly.express as px
+
+    _db_analyses: list[ProductAnalysis] = st.session_state["analyses"]
+    _db_products: list[ProductRecord]   = st.session_state["products"]
+
+    # ---- Empty states ----
+    if not _db_products and not _db_analyses:
+        st.markdown("""
+        <div class="empty-state">
+          <div class="es-icon">📂</div>
+          <div class="es-title">No data loaded yet</div>
+          <div class="es-hint">
+            Switch to the <strong>Import</strong> tab, upload your supplier
+            XLSX or PDF price lists, then confirm &amp; load.
+          </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    elif _db_products and not _db_analyses:
+        st.markdown(f"""
+        <div class="empty-state">
+          <div class="es-icon">🔍</div>
+          <div class="es-title">Products loaded — no market data yet</div>
+          <div class="es-hint">
+            <strong>{len(_db_products)} products</strong> from
+            <strong>{len({p.source for p in _db_products})} supplier(s)</strong> are ready.<br>
+            Switch to <strong>Scrape</strong> to fetch Skroutz prices,
+            or use <strong>Cache Only</strong> if you've scraped before.
+          </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    else:
+        # ---- Computed values ----
+        _found   = [a for a in _db_analyses if a.skroutz.found]
+        _strong  = [a for a in _db_analyses if a.recommendation == "strong_buy"]
+        _avg_mg  = sum(a.margin_pct for a in _found) / len(_found) if _found else 0.0
+        _invest  = sum(a.product.wholesale_price for a in _strong)
+        _profit  = sum(a.margin_absolute for a in _strong)
+
+        # ---- KPI Row ----
+        kd1, kd2, kd3, kd4 = st.columns(4)
+        kd1.metric("Total Products",          len(_db_analyses))
+        kd2.metric("Strong Buy",              len(_strong))
+        kd3.metric("Avg Gross Margin",        f"{_avg_mg:.1f}%")
+        kd4.metric("Potential Gross Profit",  f"€{_profit:,.2f}")
+
+        st.markdown("<br>", unsafe_allow_html=True)
+
+        # ---- Investment Summary ----
+        if _invest > 0:
+            _roi = (_profit / _invest) * 100
+            st.markdown(f"""
+            <div class="invest-box">
+              <div class="invest-box-title">Investment Summary — Strong Buy Products ({len(_strong)} items)</div>
+              <div class="invest-row">
+                <span class="ir-label">Total wholesale cost (1 unit each)</span>
+                <span class="ir-value">€{_invest:,.2f}</span>
+              </div>
+              <div class="invest-row">
+                <span class="ir-label">Potential gross profit (sell at Skroutz low)</span>
+                <span class="ir-value green">€{_profit:,.2f}</span>
+              </div>
+              <div class="invest-row">
+                <span class="ir-label">Gross ROI on investment</span>
+                <span class="ir-value accent">{_roi:.1f}%</span>
+              </div>
+            </div>
+            """, unsafe_allow_html=True)
+        else:
+            st.info("No strong buy products with current settings. Adjust thresholds in config.py or run a fresh scrape.")
+
+        # ---- Top 5 Opportunities ----
+        st.markdown("#### Top Opportunities")
+        _top5 = _db_analyses[:5]
+        _t5_cols = st.columns(len(_top5))
+
+        _badge_cls  = {"strong_buy": "badge-strong", "consider": "badge-consider", "skip": "badge-skip", "not_found": "badge-nf"}
+        _badge_lbl  = {"strong_buy": "Strong Buy",   "consider": "Consider",       "skip": "Skip",       "not_found": "Not Found"}
+        _comp_color = {"Low": "#22C55E", "Medium": "#F59E0B", "High": "#EF4444", "—": "#6B7280"}
+        _comp_cls   = {"Low": "green",   "Medium": "amber",   "High": "red",     "—": ""}
+
+        for col, a in zip(_t5_cols, _top5):
+            p, s = a.product, a.skroutz
+            _card_extra = "strong-buy" if a.recommendation == "strong_buy" else ""
+            _link = (
+                f'<a href="{s.product_url}" target="_blank" '
+                f'style="font-size:0.7rem;color:#6366F1;text-decoration:none;">↗ Skroutz</a>'
+                if s.found and s.product_url else ""
+            )
+            _mg_str = f"{a.margin_pct:+.1f}%" if s.found else "—"
+            _cc     = _comp_cls.get(a.competition_level, "")
+            _cv     = a.competition_level
+
+            col.markdown(f"""
+            <div class="opp-card {_card_extra}">
+              <div class="opp-card-title" title="{p.name}">{p.name[:38]}{"…" if len(p.name)>38 else ""}</div>
+              <div class="opp-card-sub">{p.source.title()} · {(p.category or "—")[:22]}</div>
+              <div class="opp-card-metrics">
+                <div><div class="m-label">Margin</div><div class="m-value green">{_mg_str}</div></div>
+                <div><div class="m-label">Score</div><div class="m-value">{a.opportunity_score:.0f}</div></div>
+                <div><div class="m-label">Compet.</div><div class="m-value {_cc}">{_cv}</div></div>
+              </div>
+              <div class="opp-card-footer">
+                <span class="{_badge_cls[a.recommendation]}">{_badge_lbl[a.recommendation]}</span>
+                {_link}
+              </div>
+            </div>
+            """, unsafe_allow_html=True)
+
+        st.markdown("<br>", unsafe_allow_html=True)
+        st.divider()
+
+        # ---- Charts ----
+        if _found:
+            chart_l, chart_r = st.columns(2)
+
+            # (a) Avg Margin % by Category
+            with chart_l:
+                st.markdown("##### Avg Margin % by Category")
+                _cat_margins: dict[str, list[float]] = defaultdict(list)
+                for a in _found:
+                    _cat_margins[a.product.category or "Uncategorised"].append(a.margin_pct)
+                _cat_rows = sorted(
+                    [{"Category": k, "Avg Margin %": round(sum(v)/len(v), 1)} for k, v in _cat_margins.items()],
+                    key=lambda x: x["Avg Margin %"], reverse=True,
+                )
+                _fig_bar = px.bar(
+                    _cat_rows, x="Avg Margin %", y="Category", orientation="h",
+                    color="Avg Margin %",
+                    color_continuous_scale=["#EF4444", "#F59E0B", "#22C55E"],
+                    template="plotly_dark",
+                    height=max(260, len(_cat_rows) * 34 + 60),
+                )
+                _fig_bar.update_layout(
+                    margin=dict(l=0, r=0, t=0, b=0),
+                    paper_bgcolor="#1A1D27", plot_bgcolor="#1A1D27",
+                    coloraxis_showscale=False,
+                    font=dict(family="Consolas", size=11, color="#9CA3AF"),
+                    yaxis=dict(autorange="reversed"),
+                )
+                _fig_bar.update_traces(marker_line_width=0)
+                st.plotly_chart(_fig_bar, use_container_width=True)
+
+            # (b) Competition distribution donut
+            with chart_r:
+                st.markdown("##### Market Competition Distribution")
+                _comp_cnt = Counter(
+                    a.competition_level for a in _found if a.competition_level != "—"
+                )
+                _comp_df = [{"Level": k, "Count": v} for k, v in _comp_cnt.items()]
+                _fig_pie = px.pie(
+                    _comp_df, names="Level", values="Count",
+                    color="Level",
+                    color_discrete_map={"Low": "#22C55E", "Medium": "#F59E0B", "High": "#EF4444"},
+                    template="plotly_dark", hole=0.44, height=290,
+                )
+                _fig_pie.update_layout(
+                    margin=dict(l=0, r=0, t=0, b=30),
+                    paper_bgcolor="#1A1D27",
+                    font=dict(family="Consolas", size=11, color="#9CA3AF"),
+                    legend=dict(orientation="h", y=-0.12),
+                )
+                _fig_pie.update_traces(textinfo="percent+label", textfont_size=11)
+                st.plotly_chart(_fig_pie, use_container_width=True)
+
+
+# ===========================================================================
+# TAB 1 — IMPORT
+# ===========================================================================
+with tab_import:
+    st.markdown("### Upload Supplier Files")
+    st.caption("Accepts `.xlsx` and `.pdf` — multiple files supported.")
+
+    uploaded = st.file_uploader(
+        "Drop files here",
+        type=["xlsx", "pdf"],
+        accept_multiple_files=True,
+        label_visibility="collapsed",
+    )
+
+    if uploaded:
+        products: list[ProductRecord] = []
+        errors: list[ParseError] = []
+        summary: list[dict] = []
+        ui_warnings: list[str] = []
+
+        tmp_dir = Path("cache/uploads")
+        tmp_dir.mkdir(parents=True, exist_ok=True)
+
+        for f in uploaded:
+            tmp_path = tmp_dir / f.name
+            tmp_path.write_bytes(f.read())
+            try:
+                ps, es, ws = parse_file(tmp_path)
+                products.extend(ps)
+                errors.extend(es)
+                ui_warnings.extend(ws)
+                supplier = ps[0].source.title() if ps else "Unknown"
+                summary.append({
+                    "File":         f.name,
+                    "Supplier":     supplier,
+                    "Type":         f.name.rsplit(".", 1)[-1].upper(),
+                    "Products":     len(ps),
+                    "Parse Errors": len(es),
+                    "Status":       "✅ OK" if not es else f"⚠️ {len(es)} warnings",
+                })
+            except Exception as exc:
+                summary.append({
+                    "File":         f.name,
+                    "Supplier":     "—",
+                    "Type":         "—",
+                    "Products":     0,
+                    "Parse Errors": 1,
+                    "Status":       f"❌ {exc}",
+                })
+
+        # Unknown supplier warnings
+        for w in ui_warnings:
+            st.warning(w)
+
+        st.markdown(f"**{len(products)} products** loaded from **{len(uploaded)} file(s)**")
+
+        # Supplier cards
+        for row in summary:
+            _bc = ("sc-badge-ok"
+                   if row["Parse Errors"] == 0
+                   else ("sc-badge-err" if "❌" in row["Status"] else "sc-badge-warn"))
+            _ic = "📄" if row["Type"] == "PDF" else "📊"
+            st.markdown(f"""
+            <div class="supplier-card">
+              <span class="sc-icon">{_ic}</span>
+              <div>
+                <div class="sc-name">{row["Supplier"]}</div>
+                <div class="sc-meta">{row["File"]} · {row["Type"]} · {row["Products"]} products</div>
+              </div>
+              <span class="sc-badge {_bc}">{row["Status"]}</span>
+            </div>
+            """, unsafe_allow_html=True)
+
+        if errors:
+            with st.expander(f"⚠️ {len(errors)} parse warnings — click to expand"):
+                st.dataframe(
+                    [{"File": e.filename, "Row": e.row, "Reason": e.reason, "Raw": e.raw or ""}
+                     for e in errors],
+                    use_container_width=True, hide_index=True,
+                )
+
+        if products:
+            if st.button("✅ Confirm & Load Products", type="primary", use_container_width=True):
+                st.session_state["products"]      = products
+                st.session_state["parse_errors"]  = errors
+                st.session_state["parse_summary"] = summary
+                st.session_state["analyses"]      = []  # reset downstream
+                st.rerun()  # force clean refresh so status bar + dashboard update immediately
+
+    elif st.session_state["products"]:
+        n = len(st.session_state["products"])
+        st.info(f"**{n} products** already loaded. Upload new files to replace them.")
+        for row in st.session_state.get("parse_summary", []):
+            _bc = ("sc-badge-ok"
+                   if row["Parse Errors"] == 0
+                   else ("sc-badge-err" if "❌" in row["Status"] else "sc-badge-warn"))
+            _ic = "📄" if row["Type"] == "PDF" else "📊"
+            st.markdown(f"""
+            <div class="supplier-card">
+              <span class="sc-icon">{_ic}</span>
+              <div>
+                <div class="sc-name">{row["Supplier"]}</div>
+                <div class="sc-meta">{row["File"]} · {row["Type"]} · {row["Products"]} products</div>
+              </div>
+              <span class="sc-badge {_bc}">{row["Status"]}</span>
+            </div>
+            """, unsafe_allow_html=True)
+    else:
+        st.markdown("""
+        <div class="empty-state">
+          <div class="es-icon">📂</div>
+          <div class="es-title">No supplier files loaded</div>
+          <div class="es-hint">
+            Drop your <strong>.xlsx</strong> or <strong>.pdf</strong> price lists above.<br>
+            Supported: <strong>Bio Tonics / Atcare</strong> (XLSX or PDF),
+            <strong>VioGenesis</strong> (PDF).
+          </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+
+# ===========================================================================
+# TAB 2 — PRODUCTS
+# ===========================================================================
+with tab_products:
+    products_state: list[ProductRecord] = st.session_state["products"]
+
+    if not products_state:
+        st.markdown("""
+        <div class="empty-state">
+          <div class="es-icon">🧾</div>
+          <div class="es-title">No products loaded</div>
+          <div class="es-hint">Go to <strong>Import</strong> and upload supplier files first.</div>
+        </div>
+        """, unsafe_allow_html=True)
+    else:
+        suppliers  = sorted({p.source.title() for p in products_state})
+        categories = sorted({p.category for p in products_state if p.category})
+
+        with st.sidebar:
+            st.markdown("#### Filters")
+            sel_supplier = st.multiselect("Supplier", suppliers, default=suppliers)
+            sel_category = st.multiselect("Category", categories, default=categories)
+            _wh_max = float(max(p.wholesale_price for p in products_state) + 1)
+            price_min, price_max = st.slider(
+                "Wholesale price (€)", 0.0, _wh_max, (0.0, _wh_max),
+            )
+
+        filtered = [
+            p for p in products_state
+            if p.source.title() in sel_supplier
+            and (not sel_category or p.category in sel_category)
+            and price_min <= p.wholesale_price <= price_max
+        ]
+
+        st.markdown(f"**{len(filtered)} products** · {len(suppliers)} supplier(s)")
+        st.caption(", ".join(
+            f"{s}: {sum(1 for p in products_state if p.source.title()==s)}"
+            for s in suppliers
+        ))
+
+        st.dataframe(
+            [
+                {
+                    "Barcode":     p.barcode,
+                    "Code":        p.code,
+                    "Product":     p.name,
+                    "Category":    p.category,
+                    "Supplier":    p.source.title(),
+                    "Wholesale €": p.wholesale_price,
+                    "Retail €":    p.retail_price,
+                    "Markup %":    round(((p.retail_price - p.wholesale_price) / p.wholesale_price) * 100, 1) if p.wholesale_price > 0 else 0,
+                }
+                for p in filtered
+            ],
+            use_container_width=True,
+            hide_index=True,
+            column_config={
+                "Wholesale €": st.column_config.NumberColumn(format="€%.2f"),
+                "Retail €":    st.column_config.NumberColumn(format="€%.2f"),
+                "Markup %":    st.column_config.NumberColumn(format="%.1f%%"),
+            },
+        )
+
+
+# ===========================================================================
+# TAB 3 — SCRAPE
+# ===========================================================================
+with tab_scrape:
+    # ------------------------------------------------------------------
+    # Sync: if the background thread just finished, copy results to session
+    # state so the Analysis tab and status bar pick them up.
+    # ------------------------------------------------------------------
+    if _SB.analyses_ready:
+        st.session_state["skroutz_results"] = dict(_SB.results)
+        st.session_state["last_scraped_at"] = _SB.scraped_at
+        st.session_state["analyses"] = analyze(
+            st.session_state["products"],
+            st.session_state["skroutz_results"],
+        )
+        _SB.analyses_ready = False
+        st.rerun()
+
+    products_state = st.session_state["products"]
+
+    if not products_state:
+        st.markdown("""
+        <div class="empty-state">
+          <div class="es-icon">🔍</div>
+          <div class="es-title">No products to scrape</div>
+          <div class="es-hint">Load products from the <strong>Import</strong> tab first.</div>
+        </div>
+        """, unsafe_allow_html=True)
+    else:
+        cache = ScrapeCache()
+        cached_count  = sum(1 for p in products_state if cache.has(p.barcode, p.name))
+        pending_count = len(products_state) - cached_count
+
+        c1, c2, c3 = st.columns(3)
+        c1.metric("Total Products", len(products_state))
+        c2.metric("Cached",         cached_count)
+        c3.metric("Pending Scrape", pending_count)
+
+        st.divider()
+
+        running = _SB.running
+
+        with st.expander("⚙️ Scrape Settings", expanded=not running):
+            col_a, col_b, col_c = st.columns(3)
+            delay = col_a.slider("Delay between requests (s)", 3, 12, 5)
+            if HEADLESS_MODE:
+                col_b.checkbox("Headless (hide browser)", value=True, disabled=True)
+                headless = True
+                col_c.caption("ℹ️ Running in Docker — headless mode is forced.")
+            else:
+                headless = col_b.checkbox("Headless (hide browser)", value=False)
+                col_c.caption("ℹ️ Headed mode is safer against bot detection.")
+
+        # ------------------------------------------------------------------
+        def _scrape_thread(products, delay, headless) -> None:
+            """Background scrape worker — writes to _SB (scrape_buffer module)."""
+            _thread_cache = ScrapeCache()
+            scraper = SkroutzScraper(
+                headless=headless,
+                delay=delay,
+                on_status=lambda msg: _SB.log.append(msg),
+            )
+            # Reset buffer for this run
+            _SB.scraper  = scraper
+            _SB.running  = True
+            _SB.log      = []
+            _SB.progress = 0
+            _SB.total    = 0
+            _SB.status   = ""
+            _SB.counts   = {"found": 0, "not_found": 0, "cached": 0, "errors": 0}
+            _SB.results  = {}
+            _SB.analyses_ready = False
+            counts = _SB.counts
+
+            try:
+                scraper.start()
+
+                # Selector health check before bulk run
+                ok, hc_msg = scraper.verify_selectors()
+                _SB.log.append(f"{'✅' if ok else '⚠️'} Health check: {hc_msg}")
+                if not ok:
+                    _SB.log.append("⚠️ Proceeding — results may be incomplete if Skroutz HTML changed.")
+
+                total = len(products)
+                _SB.total = total
+
+                for i, p in enumerate(products):
+                    if scraper._stop:
+                        break
+
+                    _SB.status   = f"[{i+1}/{total}] {p.name[:60]}"
+                    _SB.progress = i + 1
+
+                    cached_item = _thread_cache.get(p.barcode, p.name)
+                    if cached_item is not None:
+                        counts["cached"] += 1
+                        key = p.barcode if p.barcode else p.name[:60].lower()
+                        _SB.results[key] = cached_item
+                        continue
+
+                    result = scraper.search(p)
+                    key = p.barcode if p.barcode else p.name[:60].lower()
+                    _SB.results[key] = result
+                    _thread_cache.put(p.barcode, p.name, result)
+
+                    if result.found:
+                        counts["found"] += 1
+                    else:
+                        counts["not_found"] += 1
+
+            except Exception as exc:
+                _SB.log.append(f"❌ Fatal: {exc}")
+                counts["errors"] += 1
+            finally:
+                scraper.stop()
+                _SB.scraper     = None
+                _SB.running     = False
+                _SB.scraped_at  = datetime.datetime.now()
+                _SB.log.append("✅ Scrape complete.")
+                _SB.analyses_ready = True  # signal UI to pick up results on next rerun
+
+        # ------------------------------------------------------------------
+        col_btn1, col_btn2, col_btn3 = st.columns(3)
+
+        if not running:
+            if col_btn1.button("▶ Start Scraping", type="primary",
+                               use_container_width=True, disabled=pending_count == 0):
+                _SB.running = True   # set before thread start to avoid race on first rerun
+                t = threading.Thread(
+                    target=_scrape_thread,
+                    args=(products_state, delay, headless),
+                    daemon=True,
+                )
+                t.start()
+                st.rerun()
+
+            if col_btn2.button("⚡ Use Cache Only", use_container_width=True,
+                               disabled=cached_count == 0):
+                results = {}
+                for p in products_state:
+                    r = cache.get(p.barcode, p.name)
+                    if r:
+                        key = p.barcode if p.barcode else p.name[:60].lower()
+                        results[key] = r
+                st.session_state["skroutz_results"] = results
+                st.session_state["analyses"]        = analyze(products_state, results)
+                st.session_state["last_scraped_at"] = datetime.datetime.now()
+                st.success(f"Loaded {len(results)} cached results. Check the **Analysis** tab.")
+
+            if col_btn3.button("🗑 Clear Cache", use_container_width=True):
+                cache.clear()
+                st.session_state["skroutz_results"] = {}
+                st.session_state["analyses"]        = []
+                st.rerun()
+        else:
+            if col_btn1.button("⏸ Pause", use_container_width=True):
+                s = _SB.scraper
+                if s:
+                    s.pause()
+                st.session_state["scrape_paused"] = True
+
+            if col_btn2.button("▶ Resume", use_container_width=True,
+                               disabled=not st.session_state["scrape_paused"]):
+                s = _SB.scraper
+                if s:
+                    s.resume()
+                st.session_state["scrape_paused"] = False
+
+            if col_btn3.button("⏹ Stop", use_container_width=True):
+                s = _SB.scraper
+                if s:
+                    s.stop()
+
+        # Progress display
+        if running or _SB.progress:
+            _total = _SB.total or len(products_state)
+            st.progress(_SB.progress / _total if _total else 0)
+            st.caption(_SB.status)
+
+            _cnt = _SB.counts
+            cc1, cc2, cc3, cc4 = st.columns(4)
+            cc1.metric("Found",      _cnt["found"])
+            cc2.metric("Not Found",  _cnt["not_found"])
+            cc3.metric("From Cache", _cnt["cached"])
+            cc4.metric("Errors",     _cnt["errors"])
+
+        if _SB.log:
+            log_html = "<br>".join(_SB.log[-30:])
+            st.markdown(f'<div class="scrape-log">{log_html}</div>', unsafe_allow_html=True)
+
+        if running:
+            time.sleep(1)
+            st.rerun()
+
+
+# ===========================================================================
+# TAB 4 — ANALYSIS
+# ===========================================================================
+with tab_analysis:
+    analyses: list[ProductAnalysis] = st.session_state["analyses"]
+    products_state = st.session_state["products"]
+
+    if not products_state:
+        st.markdown("""
+        <div class="empty-state">
+          <div class="es-icon">📈</div>
+          <div class="es-title">No data to analyse</div>
+          <div class="es-hint">Load products from <strong>Import</strong>, then scrape or load cached results.</div>
+        </div>
+        """, unsafe_allow_html=True)
+    elif not analyses:
+        st.markdown("""
+        <div class="empty-state">
+          <div class="es-icon">📈</div>
+          <div class="es-title">No analysis data yet</div>
+          <div class="es-hint">
+            Run the <strong>Scrape</strong> tab (or use <strong>Cache Only</strong>)
+            to fetch Skroutz prices, then analysis will appear here.
+          </div>
+        </div>
+        """, unsafe_allow_html=True)
+    else:
+        found     = [a for a in analyses if a.skroutz.found]
+        not_found = [a for a in analyses if not a.skroutz.found]
+
+        avg_margin = sum(a.margin_pct for a in found) / len(found) if found else 0
+        avg_shops  = sum(a.skroutz.shop_count for a in found) / len(found) if found else 0
+
+        k1, k2, k3, k4 = st.columns(4)
+        k1.metric("Total Products",       len(analyses))
+        k2.metric("Found on Skroutz",     f"{len(found)} / {len(analyses)}")
+        k3.metric("Avg Gross Margin",     f"{avg_margin:.1f}%")
+        k4.metric("Avg Shop Competition", f"{avg_shops:.1f}")
+
+        st.divider()
+
+        # ---- Sidebar filters ----
+        with st.sidebar:
+            st.markdown("#### Analysis Filters")
+            min_margin   = st.slider("Min Margin %", -50, 200, 0)
+            max_shops    = st.slider("Max Shop Count", 0, 100, 100)
+            rec_filter   = st.multiselect(
+                "Recommendation",
+                ["strong_buy", "consider", "skip", "not_found"],
+                default=["strong_buy", "consider", "skip", "not_found"],
+            )
+            sup_filter   = st.multiselect(
+                "Supplier",
+                sorted({a.product.source.title() for a in analyses}),
+                default=sorted({a.product.source.title() for a in analyses}),
+            )
+
+        filtered_a = [
+            a for a in analyses
+            if a.recommendation in rec_filter
+            and a.product.source.title() in sup_filter
+            and (not a.skroutz.found or (a.margin_pct >= min_margin and a.skroutz.shop_count <= max_shops))
+        ]
+
+        st.markdown(f"**{len(filtered_a)} products** matching filters")
+
+        # ---- Business Summary ----
+        _sb_strong  = [a for a in filtered_a if a.recommendation == "strong_buy"]
+        _sb_invest  = sum(a.product.wholesale_price for a in _sb_strong)
+        _sb_profit  = sum(a.margin_absolute for a in _sb_strong if a.skroutz.found)
+        _found_f    = [a for a in filtered_a if a.skroutz.found]
+        _avg_mkt    = sum(a.skroutz.lowest_price for a in _found_f) / len(_found_f) if _found_f else 0
+        _avg_wh     = sum(a.product.wholesale_price for a in _found_f) / len(_found_f) if _found_f else 0
+
+        bs1, bs2, bs3 = st.columns(3)
+        bs1.markdown(f"""
+        <div class="summary-box">
+          <div class="sb-value">{len(_sb_strong)}</div>
+          <div class="sb-label">Strong Buy Products</div>
+          <div class="sb-sub">Stock cost: <strong>€{_sb_invest:,.2f}</strong></div>
+        </div>
+        """, unsafe_allow_html=True)
+        bs2.markdown(f"""
+        <div class="summary-box">
+          <div class="sb-value green">€{_sb_profit:,.2f}</div>
+          <div class="sb-label">Potential Gross Profit</div>
+          <div class="sb-sub">From strong-buy items in current filter</div>
+        </div>
+        """, unsafe_allow_html=True)
+        bs3.markdown(f"""
+        <div class="summary-box">
+          <div class="sb-value">€{_avg_mkt:.2f}</div>
+          <div class="sb-label">Avg Skroutz Price</div>
+          <div class="sb-sub">vs avg wholesale <strong>€{_avg_wh:.2f}</strong></div>
+        </div>
+        """, unsafe_allow_html=True)
+
+        st.markdown("<br>", unsafe_allow_html=True)
+
+        # ---- Main dataframe ----
+        _rec_labels = {
+            "strong_buy": "✅ Strong Buy",
+            "consider":   "🟡 Consider",
+            "skip":       "❌ Skip",
+            "not_found":  "⚪ Not Found",
+        }
+        rows_a = []
+        for a in filtered_a:
+            p, s = a.product, a.skroutz
+            _cheap_price  = round(s.lowest_price - 0.01, 2) if s.found and s.lowest_price > 0 else None
+            _cheap_margin = (
+                round((_cheap_price - p.wholesale_price) / p.wholesale_price * 100, 1)
+                if _cheap_price is not None and p.wholesale_price > 0 else None
+            )
+            rows_a.append({
+                "Product":            p.name,
+                "Supplier":           p.source.title(),
+                "Category":           p.category,
+                "Wholesale €":        p.wholesale_price,
+                "Skroutz Low €":      s.lowest_price if s.found else None,
+                "Margin €":           a.margin_absolute if s.found else None,
+                "Margin %":           a.margin_pct if s.found else None,
+                "Undercut vs RRP %":  a.undercut_vs_retail if s.found else None,
+                "Your Cheapest €":    _cheap_price,
+                "Margin at Cheapest": _cheap_margin,
+                "Shops":              s.shop_count if s.found else None,
+                "Rating":             s.rating if s.found and s.rating else None,
+                "Score":              a.opportunity_score,
+                "Competition":        a.competition_level,
+                "Recommendation":     _rec_labels.get(a.recommendation, a.recommendation),
+                "Link":               s.product_url if s.found else "",
+            })
+
+        st.dataframe(
+            rows_a,
+            use_container_width=True,
+            hide_index=True,
+            column_config={
+                "Wholesale €":       st.column_config.NumberColumn(format="€%.2f"),
+                "Skroutz Low €":     st.column_config.NumberColumn(format="€%.2f"),
+                "Margin €":          st.column_config.NumberColumn(format="€%.2f"),
+                "Margin %":          st.column_config.NumberColumn(format="%.1f%%"),
+                "Undercut vs RRP %": st.column_config.NumberColumn(
+                    format="%.1f%%",
+                    help="How much cheaper Skroutz low is vs. supplier's suggested retail price",
+                ),
+                "Your Cheapest €":   st.column_config.NumberColumn(
+                    format="€%.2f",
+                    help="Set this price to be the cheapest seller on Skroutz (market low − €0.01)",
+                ),
+                "Margin at Cheapest": st.column_config.NumberColumn(
+                    format="%.1f%%",
+                    help="Your gross margin if you sell at the cheapest price",
+                ),
+                "Rating":  st.column_config.NumberColumn(format="⭐ %.1f"),
+                "Score":   st.column_config.ProgressColumn(min_value=0, max_value=100, format="%.0f"),
+                "Link":    st.column_config.LinkColumn("Skroutz Link"),
+            },
+        )
+
+        # ---- Scatter chart: Margin vs Competition ----
+        if found:
+            st.markdown("<br>", unsafe_allow_html=True)
+            st.markdown("#### Margin vs. Competition Map")
+            _scatter_data = [
+                {
+                    "Product":    a.product.name[:55],
+                    "Shop Count": a.skroutz.shop_count,
+                    "Margin %":   a.margin_pct,
+                    "Score":      a.opportunity_score,
+                    "Rec":        _rec_labels.get(a.recommendation, a.recommendation),
+                }
+                for a in filtered_a if a.skroutz.found
+            ]
+            if _scatter_data:
+                import plotly.express as px
+                _cmap = {
+                    "✅ Strong Buy": "#22C55E",
+                    "🟡 Consider":  "#F59E0B",
+                    "❌ Skip":      "#EF4444",
+                    "⚪ Not Found": "#6B7280",
+                }
+                _fig_sc = px.scatter(  # noqa: F821
+                    _scatter_data,
+                    x="Shop Count", y="Margin %",
+                    size="Score", color="Rec",
+                    color_discrete_map=_cmap,
+                    hover_name="Product",
+                    hover_data={"Score": True, "Shop Count": True, "Margin %": ":.1f"},
+                    template="plotly_dark", size_max=30, height=420,
+                    labels={"Shop Count": "No. of Shops (Competition)", "Margin %": "Gross Margin %"},
+                )
+                _fig_sc.add_hline(
+                    y=30, line_dash="dot", line_color="#22C55E55",
+                    annotation_text="Strong Buy threshold (30%)",
+                    annotation_position="top right",
+                    annotation_font_color="#22C55E99",
+                )
+                _fig_sc.update_layout(
+                    paper_bgcolor="#1A1D27", plot_bgcolor="#111318",
+                    font=dict(family="Consolas", size=11, color="#9CA3AF"),
+                    legend=dict(orientation="h", y=1.05, x=0, bgcolor="rgba(0,0,0,0)"),
+                    margin=dict(l=0, r=0, t=30, b=0),
+                    xaxis=dict(gridcolor="#2D3148", zeroline=False),
+                    yaxis=dict(gridcolor="#2D3148", zeroline=True, zerolinecolor="#4B5563"),
+                )
+                st.plotly_chart(_fig_sc, use_container_width=True)
+                st.caption("Bubble size = opportunity score. Best picks: upper-left quadrant (high margin, few competitors).")
+
+        st.divider()
+
+        # ---- Export ----
+        st.markdown("#### Export Report")
+        col_dl1, col_dl2 = st.columns([2, 5])
+        xlsx_bytes = generate_xlsx(analyses, st.session_state["parse_errors"])
+        col_dl1.download_button(
+            label="⬇ Download XLSX Report",
+            data=xlsx_bytes,
+            file_name="spreadshop_report.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            type="primary",
+            use_container_width=True,
+        )
+        col_dl2.caption(
+            f"Includes: Opportunities · {len(not_found)} not-found products · Parse errors"
+        )

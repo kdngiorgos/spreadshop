@@ -1,0 +1,12 @@
+services:
+  spreadshop:
+    build: .
+    ports:
+      - "8080:8501"
+    volumes:
+      - ./cache:/app/cache
+      - ./reports:/app/reports
+      - ./logs:/app/logs
+    environment:
+      - SPREADSHOP_HEADLESS=true
+    restart: unless-stopped
