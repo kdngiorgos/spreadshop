@@ -11,9 +11,8 @@ Target audience: resellers operating in the Greek market (Skroutz.gr is the domi
 ## Running the App
 
 ```bash
-# Install deps + browser (first time only)
+# Install deps (first time only)
 pip install -r requirements.txt
-python -m playwright install chromium
 
 # Launch
 streamlit run app.py
@@ -26,10 +25,8 @@ streamlit run app.py
 
 1. **Import** — upload `.xlsx` or `.pdf` supplier files → auto-parsed, summary shown
 2. **Products** — browse the full parsed catalog with filters
-3. **Scrape** — launch Playwright browser to search Skroutz for each product; pause/resume/stop controls; results cached
+3. **Scrape** — launch concurrent async tasks using httpx to search Skroutz JSON endpoints for each product; pause/resume/stop controls; results cached
 4. **Analysis** — KPI cards + sortable table with margins, competition, opportunity scores; download XLSX report
-
-**Important:** Use **headed mode** (browser visible) for scraping. Skroutz blocks headless browsers more aggressively. Headed mode is the default.
 
 ---
 
@@ -53,7 +50,7 @@ parsers/
   pdf_biotonics.py          Bio Tonics PDF (pdfplumber, comma-decimal prices)
   pdf_viogenesis.py         VioGenesis PDF (pdfplumber + 3-pattern garble decoder)
 scraper/
-  skroutz.py                Playwright browser automation, HTML parsing with BeautifulSoup
+  skroutz.py                httpx async JSON endpoint client, concurrent scraping
   cache.py                  JSON file cache (24h TTL, keyed by barcode)
 analysis/
   compare.py                Margin %, opportunity score (0-100), recommendations

@@ -896,7 +896,8 @@ with tab_scrape:
 
         with st.expander("Scrape Settings", expanded=not running):
             col_a, col_b, col_c = st.columns(3)
-            delay = col_a.slider("Delay between requests (s)", 3, 12, 5)
+            from config import SCRAPER_DEFAULT_DELAY
+            delay = col_a.slider("Delay between requests (s)", 0.0, 5.0, float(SCRAPER_DEFAULT_DELAY), step=0.1)
             if HEADLESS_MODE:
                 col_b.checkbox("Headless (hide browser)", value=True, disabled=True)
                 headless = True

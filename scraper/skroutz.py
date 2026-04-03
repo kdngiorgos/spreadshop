@@ -21,7 +21,7 @@ from config import (
 logger = logging.getLogger(__name__)
 
 _BASE_URL = "https://www.skroutz.gr"
-_SEARCH_JSON_URL = "https://www.skroutz.gr/search.json?keyphrase={query}"
+_SEARCH_JSON_URL = "https://www.skroutz.gr/search.json"
 _UA = (
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
     "AppleWebKit/537.36 (KHTML, like Gecko) "
@@ -31,13 +31,16 @@ _UA = (
 def _price_from_text(text: str) -> Optional[float]:
     """Extract the first Euro price from arbitrary text."""
     if not text: return None
-    text_clean = str(text).replace("\xa0", "").replace(".", "") # Remove thousands separator
-    m = re.search(r"(\d+),(\d{2})", text_clean)
+    text_no_dot = str(text).replace("\xa0", "").replace(".", "") # Remove thousands separator
+    text_with_dot = str(text).replace("\xa0", "")
+
+    # Path 1: comma decimal
+    m = re.search(r"(\d+),(\d{2})", text_no_dot)
     if m:
         return float(f"{m.group(1)}.{m.group(2)}")
 
     # Fallback to dot decimal
-    m = re.search(r"(\d+)\.(\d{2})", text_clean)
+    m = re.search(r"(\d+)\.(\d{2})", text_with_dot)
     if m:
         return float(f"{m.group(1)}.{m.group(2)}")
 
@@ -49,10 +52,11 @@ def _similarity(a: str, b: str) -> float:
     a_lower = a.lower()
     b_lower = b.lower()
 
-    # If the product name contains the query as a substring, boost its score
+    # If the product name contains the query as a substring, boost its score proportionally
     boost = 0.0
     if a_lower in b_lower:
-        boost = 0.5
+        # Boost proportional to how much of the target string the query covers
+        boost = 0.5 * (len(a_lower) / max(1, len(b_lower)))
 
     return difflib.SequenceMatcher(None, a_lower, b_lower).ratio() + boost
 
@@ -137,9 +141,7 @@ class SkroutzScraper:
         self._pause_event = threading.Event()
         self._pause_event.set()  # not paused initially
         self._stop = False
-        self._client = None
-        self._loop = None
-        self._thread = None
+        self._tasks = []
 
     # ------------------------------------------------------------------
     def start(self) -> None:
@@ -148,6 +150,9 @@ class SkroutzScraper:
     def stop(self) -> None:
         self._stop = True
         self._pause_event.set()  # unblock if currently paused
+        for task in self._tasks:
+            if not task.done():
+                task.cancel()
 
     def pause(self) -> None:
         self._pause_event.clear()  # block search() calls at the wait point
@@ -181,11 +186,11 @@ class SkroutzScraper:
         Call after start() and before bulk scraping.  Returns (ok, message).
         """
         try:
-            test_url = _SEARCH_JSON_URL.format(query="aspirin tablet")
+            test_url = _SEARCH_JSON_URL
             self.on_status("Running endpoint health check…")
 
             with httpx.Client(headers={"User-Agent": _UA}) as client:
-                resp = client.get(test_url, timeout=SCRAPER_PAGE_TIMEOUT_MS/1000.0)
+                resp = client.get(test_url, params={"keyphrase": "aspirin tablet"}, timeout=SCRAPER_PAGE_TIMEOUT_MS/1000.0)
                 if resp.status_code != 200:
                     return False, f"Health check failed with status {resp.status_code}"
 
@@ -203,9 +208,9 @@ class SkroutzScraper:
 
     # ------------------------------------------------------------------
     async def _fetch_async(self, client: httpx.AsyncClient, query: str) -> Optional[Dict[str, Any]]:
-        url = _SEARCH_JSON_URL.format(query=query.replace(" ", "+"))
+        url = _SEARCH_JSON_URL
         try:
-            resp = await client.get(url, timeout=SCRAPER_PAGE_TIMEOUT_MS/1000.0)
+            resp = await client.get(url, params={"keyphrase": query}, timeout=SCRAPER_PAGE_TIMEOUT_MS/1000.0)
             if resp.status_code != 200:
                 return None
             data = resp.json()
@@ -242,18 +247,18 @@ class SkroutzScraper:
         """Async Search for a product and return scraped Skroutz data."""
         # Check if paused (synchronously blocking is bad in async, but since this is
         # called in a bounded semaphore we can do a simple sleep loop)
-        while not self._pause_event.is_set():
-            if self._stop:
-                break
-            await asyncio.sleep(0.5)
-
-        if self._stop:
-            return SkroutzResult(found=False, search_query=product.name)
-
-        query = product.name
-        self.on_status(f"Searching: {product.name[:60]}…")
-
         try:
+            while not self._pause_event.is_set():
+                if self._stop:
+                    break
+                await asyncio.sleep(0.5)
+
+            if self._stop:
+                return SkroutzResult(found=False, search_query=product.name)
+
+            query = product.name
+            self.on_status(f"Searching: {product.name[:60]}…")
+
             data = await self._fetch_async(client, query)
             if data:
                 import json
@@ -267,6 +272,8 @@ class SkroutzScraper:
 
             # If not found by name and we have a barcode, retry with barcode
             if not result.found and product.barcode:
+                if self._stop:
+                    return SkroutzResult(found=False, search_query=product.name)
                 await asyncio.sleep(self.delay + random.uniform(-self.delay_jitter/2, self.delay_jitter/2))
                 self.on_status(f"Retrying by barcode: {product.barcode}")
                 bc_data = await self._fetch_async(client, product.barcode)
@@ -277,6 +284,8 @@ class SkroutzScraper:
                         result = bc_result
 
             if result.found and hasattr(result, "skroutz_id") and getattr(result, "skroutz_id"):
+                if self._stop:
+                    return SkroutzResult(found=False, search_query=product.name)
                 skroutz_id = getattr(result, "skroutz_id")
                 await asyncio.sleep(self.delay + random.uniform(-self.delay_jitter/2, self.delay_jitter/2))
                 filter_data = await self._fetch_filter_products_async(client, skroutz_id)
@@ -299,17 +308,20 @@ class SkroutzScraper:
                 product.name[:40], result.found, result.lowest_price,
             )
 
+            await asyncio.sleep(self.delay + random.uniform(-self.delay_jitter/2, self.delay_jitter/2))
+            return result
+        except asyncio.CancelledError:
+            self.on_status(f"Scraping cancelled for {product.name[:40]}")
+            raise
         except Exception as exc:
             logger.error("Error scraping %r: %s", product.name[:40], exc)
             self.on_status(f"Error scraping {product.name[:40]}: {exc}")
-            result = SkroutzResult(found=False, search_query=query)
-
-        await asyncio.sleep(self.delay + random.uniform(-self.delay_jitter/2, self.delay_jitter/2))
-        return result
+            return SkroutzResult(found=False, search_query=product.name)
 
     async def bulk_search_async(self, products: list[ProductRecord], concurrency: int = 5) -> dict[str, SkroutzResult]:
         results = {}
         sem = asyncio.Semaphore(concurrency)
+        self._tasks = []
 
         async with httpx.AsyncClient(headers={"User-Agent": _UA}, http2=True) as client:
             async def process_product(product: ProductRecord):
@@ -317,7 +329,11 @@ class SkroutzScraper:
                     res = await self.search_async(product, client)
                     results[product.barcode or product.name] = res
 
-            await asyncio.gather(*(process_product(p) for p in products))
+            for p in products:
+                task = asyncio.create_task(process_product(p))
+                self._tasks.append(task)
+
+            await asyncio.gather(*self._tasks, return_exceptions=True)
 
         return results
 

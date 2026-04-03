@@ -66,3 +66,22 @@ def test_parse_search_results_json_bad_price():
     assert result is not None
     assert result.lowest_price == 0.0
     assert getattr(result, "skroutz_id") == 123
+
+def test_parse_search_results_json_negative_substring_boost():
+    # Ensures that a query matching only as a minor substring in a SKU name
+    # scores below SCRAPER_FUZZY_MATCH_THRESHOLD and is thus ignored.
+    data = {
+        "skus": [
+            {
+                "id": 999,
+                "price": "5.00 €",
+                "name": "A really long and completely irrelevant product name that happens to include red color",
+                "sku_url": "/s/999/x.html"
+            }
+        ]
+    }
+    # Query is "red", which is 3 chars long, while the target string is 84 chars long.
+    # The SequenceMatcher ratio will be low (~0.07), and the proportional boost will be 0.5 * (3 / 84) = ~0.017.
+    # The total score (~0.087) is well below the 0.35 threshold.
+    result = _parse_search_results_json(data, "red")
+    assert not result.found
