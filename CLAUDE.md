@@ -134,7 +134,7 @@ All extracted prices must satisfy: `0.48 ≤ wholesale/retail ≤ 0.78` (typical
 
 ### URL pattern
 We now use the fast and much less restrictive JSON endpoints for Skroutz:
-```
+```text
 https://www.skroutz.gr/search.json?keyphrase={product_name}
 # Fallback: search by barcode EAN
 https://www.skroutz.gr/search.json?keyphrase={barcode}

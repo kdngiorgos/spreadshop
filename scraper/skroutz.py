@@ -30,7 +30,8 @@ _UA = (
 
 def _price_from_text(text: str) -> Optional[float]:
     """Extract the first Euro price from arbitrary text."""
-    if not text: return None
+    if not text:
+        return None
     text_no_dot = str(text).replace("\xa0", "").replace(".", "") # Remove thousands separator
     text_with_dot = str(text).replace("\xa0", "")
 
@@ -47,7 +48,6 @@ def _price_from_text(text: str) -> Optional[float]:
     return None
 
 def _similarity(a: str, b: str) -> float:
-    import difflib
     # Improved similarity logic to favor strings that start with the query
     a_lower = a.lower()
     b_lower = b.lower()
@@ -109,9 +109,8 @@ def _parse_search_results_json(data: Dict[str, Any], query: str) -> Optional[Skr
                 review_count=reviews,
                 match_confidence=score,
                 search_query=query,
+                skroutz_id=sku.get("id"),
             )
-            # Store the sku id dynamically into the object so we can use it for filter_products.json
-            setattr(best_result, "skroutz_id", sku.get("id"))
 
     if best_result and best_score >= SCRAPER_FUZZY_MATCH_THRESHOLD:
         return best_result
@@ -283,16 +282,16 @@ class SkroutzScraper:
                         bc_result.search_query = query  # report original query
                         result = bc_result
 
-            if result.found and hasattr(result, "skroutz_id") and getattr(result, "skroutz_id"):
+            if result.found and result.skroutz_id:
                 if self._stop:
                     return SkroutzResult(found=False, search_query=product.name)
-                skroutz_id = getattr(result, "skroutz_id")
+                skroutz_id = result.skroutz_id
                 await asyncio.sleep(self.delay + random.uniform(-self.delay_jitter/2, self.delay_jitter/2))
                 filter_data = await self._fetch_filter_products_async(client, skroutz_id)
                 if filter_data:
                     prices = []
                     product_cards = filter_data.get("product_cards", {})
-                    for card_id, card_info in product_cards.items():
+                    for _card_id, card_info in product_cards.items():
                         price = card_info.get("final_price") or _price_from_text(card_info.get("price", ""))
                         if price and 0.5 < price < 10000:
                             prices.append(price)

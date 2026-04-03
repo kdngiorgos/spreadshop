@@ -16,7 +16,7 @@ from scraper.cache import ScrapeCache
 from scraper.skroutz import SkroutzScraper
 from analysis.compare import ProductAnalysis, analyze
 from analysis.export import generate_xlsx
-from config import HEADLESS_MODE
+from config import HEADLESS_MODE, SCRAPER_DEFAULT_DELAY
 import scrape_buffer as _SB
 
 setup_logging()
@@ -896,7 +896,6 @@ with tab_scrape:
 
         with st.expander("Scrape Settings", expanded=not running):
             col_a, col_b, col_c = st.columns(3)
-            from config import SCRAPER_DEFAULT_DELAY
             delay = col_a.slider("Delay between requests (s)", 0.0, 5.0, float(SCRAPER_DEFAULT_DELAY), step=0.1)
             if HEADLESS_MODE:
                 col_b.checkbox("Headless (hide browser)", value=True, disabled=True)
@@ -955,10 +954,9 @@ with tab_scrape:
                 if to_scrape:
                     _SB.log.append(f"Scraping {len(to_scrape)} products concurrently...")
 
-                    async def do_bulk():
-                        return await scraper.bulk_search_async(to_scrape, concurrency=5)
-
-                    results_dict = asyncio.run(do_bulk())
+                    results_dict = asyncio.run(
+                        scraper.bulk_search_async(to_scrape, concurrency=5)
+                    )
 
                     for p in to_scrape:
                         if scraper._stop:

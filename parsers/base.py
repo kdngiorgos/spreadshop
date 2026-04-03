@@ -31,6 +31,7 @@ class SkroutzResult:
     review_count: int = 0
     match_confidence: float = 0.0
     search_query: str = ""
+    skroutz_id: Optional[int] = None
 
 
 @dataclass
