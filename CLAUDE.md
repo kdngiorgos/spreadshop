@@ -136,33 +136,42 @@ All extracted prices must satisfy: `0.48 ≤ wholesale/retail ≤ 0.78` (typical
 ## Skroutz Scraping
 
 ### URL pattern
+We now use the fast and much less restrictive JSON endpoints for Skroutz:
 ```
-https://www.skroutz.gr/search?keyphrase={product_name}
+https://www.skroutz.gr/search.json?keyphrase={product_name}
 # Fallback: search by barcode EAN
-https://www.skroutz.gr/search?keyphrase={barcode}
+https://www.skroutz.gr/search.json?keyphrase={barcode}
 ```
 
-Direct HTTP requests return **403**. Browser automation is mandatory.
+Since we use JSON endpoints, browser automation is no longer required. `httpx.AsyncClient` is used to scrape extremely fast concurrently via `asyncio`.
+
+Example JSON endpoint usage:
+When querying `https://www.skroutz.gr/search.json?keyphrase=xiaomi15`, the JSON might return:
+```json
+{"redirectUrl":"https://www.skroutz.gr/c/40/kinhta-thlefwna/.../Xiaomi-15.html?o=xiaomi15"}
+```
+If `redirectUrl` is present, the script automatically follows it by replacing `.html` with `.json` to get the list of SKUs.
+
+Important JSON response fields used by the parser:
+- `skus`: List of products.
+- `name`: Product name.
+- `sku_url`: Product url.
+- `price`: Lowest price string (e.g. "1.347,78 €").
+- `shop_count`: Number of shops selling the item.
+- `review_score`: Rating string (e.g. "4,7").
+- `reviews_count`: Number of reviews.
 
 ### `SkroutzScraper` config
 
 | Param | Default | Notes |
 |-------|---------|-------|
-| `headless` | `False` | Headed mode is safer — use `True` only for trusted environments |
-| `delay` | `5.0s` | Base delay between requests |
-| `delay_jitter` | `2.0s` | Random ±jitter added to delay |
+| `delay` | `0.1s` | Base delay between requests |
+| `delay_jitter` | `0.1s` | Random ±jitter added to delay |
 | UA | Chrome 124 / Win10 | Set in `scraper/skroutz.py` `_UA` constant |
 
 ### Result types
 
-The scraper handles 3 page scenarios:
-1. **Direct redirect** (`/s/XXXX/...` in URL) → `_parse_product_page()`
-2. **Search results list** → `_parse_search_results()` picks best fuzzy match (≥0.35 similarity)
-3. **No results** → `SkroutzResult(found=False)`
-
-### DOM selectors
-
-Skroutz's HTML structure may change. The selectors in `_parse_search_results()` are intentionally broad (multiple fallbacks). If parsing fails, the scraper saves raw HTML to `cache/debug/` for inspection. Tune selectors in `skroutz.py:_parse_search_results()` and `_parse_product_page()`.
+The scraper handles JSON responses by fuzz-matching the results with the query and selecting the best match (`_parse_search_results_json`). Unrecognized formats will yield a `SkroutzResult(found=False)`.
 
 ### Cache
 
@@ -221,8 +230,7 @@ score         = margin_score + comp_score + demand_score
 
 | Decision | Why |
 |----------|-----|
-| Playwright over `requests` | Skroutz returns 403 to all plain HTTP clients — JS rendering required |
-| Headed browser by default | Less likely to be fingerprinted as a bot; safer for a PoC |
+| httpx AsyncClient | Used to query JSON endpoints efficiently concurrently, bypassing the need for a browser completely. |
 | JSON cache (not SQLite) | Zero dependencies, human-readable for debugging, sufficient for <1000 products |
 | Monospace font theme | Matches the data-dense B2B SaaS aesthetic; makes price columns easier to scan |
 | Thread for scraping | Streamlit reruns the entire script on every interaction; the scraper must run in a daemon thread with results written to `session_state` |

@@ -33,9 +33,9 @@ SCORE_DEMAND_BASE      = 100  # reviews at or above this → max demand score
 # ---------------------------------------------------------------------------
 # Scraper
 # ---------------------------------------------------------------------------
-SCRAPER_DEFAULT_DELAY         = 2.5    # base seconds between requests
-SCRAPER_DEFAULT_JITTER        = 1.0    # ± random jitter added to delay
-SCRAPER_PAGE_TIMEOUT_MS       = 30000  # Playwright page.goto() timeout (ms)
+SCRAPER_DEFAULT_DELAY         = 0.1    # base seconds between requests (lowered for async JSON scraping)
+SCRAPER_DEFAULT_JITTER        = 0.1    # ± random jitter added to delay
+SCRAPER_PAGE_TIMEOUT_MS       = 30000  # Request timeout (ms)
 SCRAPER_FUZZY_MATCH_THRESHOLD = 0.35   # min SequenceMatcher ratio for a valid match
 
 # ---------------------------------------------------------------------------

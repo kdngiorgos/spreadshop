@@ -908,6 +908,7 @@ with tab_scrape:
         # ------------------------------------------------------------------
         def _scrape_thread(products, delay, headless) -> None:
             """Background scrape worker — writes to _SB (scrape_buffer module)."""
+            import asyncio
             _thread_cache = ScrapeCache()
             scraper = SkroutzScraper(
                 headless=headless,
@@ -939,31 +940,50 @@ with tab_scrape:
                 total = len(products)
                 _SB.total = total
 
-                for i, p in enumerate(products):
-                    if scraper._stop:
-                        break
-
-                    _SB.status   = f"[{i+1}/{total}] {p.name[:60]}"
-                    _SB.progress = i + 1
-
+                to_scrape = []
+                for p in products:
                     cached_item = _thread_cache.get(p.barcode, p.name)
                     if cached_item is not None:
                         counts["cached"] += 1
                         key = p.barcode if p.barcode else p.name[:60].lower()
                         _SB.results[key] = cached_item
-                        continue
-
-                    result = scraper.search(p)
-                    key = p.barcode if p.barcode else p.name[:60].lower()
-                    _SB.results[key] = result
-                    _thread_cache.put(p.barcode, p.name, result)
-
-                    if result.found:
-                        counts["found"] += 1
+                        _SB.progress += 1
                     else:
-                        counts["not_found"] += 1
+                        to_scrape.append(p)
+
+                if to_scrape:
+                    _SB.log.append(f"Scraping {len(to_scrape)} products concurrently...")
+
+                    async def do_bulk():
+                        return await scraper.bulk_search_async(to_scrape, concurrency=5)
+
+                    results_dict = asyncio.run(do_bulk())
+
+                    for p in to_scrape:
+                        if scraper._stop:
+                            break
+                        _SB.status   = f"Processing {p.name[:60]}"
+                        key = p.barcode if p.barcode else p.name[:60].lower()
+
+                        # Use the dictionary key from bulk search (barcode or name)
+                        res_key = p.barcode or p.name
+                        result = results_dict.get(res_key)
+
+                        if result:
+                            _SB.results[key] = result
+                            _thread_cache.put(p.barcode, p.name, result)
+                            if result.found:
+                                counts["found"] += 1
+                            else:
+                                counts["not_found"] += 1
+                        else:
+                            counts["errors"] += 1
+
+                        _SB.progress += 1
 
             except Exception as exc:
+                import traceback
+                traceback.print_exc()
                 _SB.log.append(f"[ERROR] Fatal: {exc}")
                 counts["errors"] += 1
             finally:
