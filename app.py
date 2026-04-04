@@ -16,7 +16,7 @@ from scraper.cache import ScrapeCache
 from scraper.skroutz import SkroutzScraper
 from analysis.compare import ProductAnalysis, analyze
 from analysis.export import generate_xlsx
-from config import HEADLESS_MODE
+from config import HEADLESS_MODE, SCRAPER_DEFAULT_DELAY
 import scrape_buffer as _SB
 
 setup_logging()
@@ -475,7 +475,7 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 # ---------------------------------------------------------------------------
-# Tabs
+# App workflow (5 tabs)
 # ---------------------------------------------------------------------------
 tab_dashboard, tab_import, tab_products, tab_scrape, tab_analysis = st.tabs([
     "Dashboard", "Import", "Products", "Scrape", "Analysis"
@@ -895,19 +895,14 @@ with tab_scrape:
         running = _SB.running
 
         with st.expander("Scrape Settings", expanded=not running):
-            col_a, col_b, col_c = st.columns(3)
-            delay = col_a.slider("Delay between requests (s)", 3, 12, 5)
-            if HEADLESS_MODE:
-                col_b.checkbox("Headless (hide browser)", value=True, disabled=True)
-                headless = True
-                col_c.caption("ℹ️ Running in Docker — headless mode is forced.")
-            else:
-                headless = col_b.checkbox("Headless (hide browser)", value=False)
-                col_c.caption("ℹ️ Headed mode is safer against bot detection.")
+            delay = st.slider("Delay between requests (s)", 0.0, 5.0, float(SCRAPER_DEFAULT_DELAY), step=0.1)
+            headless = HEADLESS_MODE
+            st.caption(f"ℹ️ Scraper is configured via config.py. Using HTTPX (JSON endpoints) without browser.")
 
         # ------------------------------------------------------------------
         def _scrape_thread(products, delay, headless) -> None:
             """Background scrape worker — writes to _SB (scrape_buffer module)."""
+            import asyncio
             _thread_cache = ScrapeCache()
             scraper = SkroutzScraper(
                 headless=headless,
@@ -939,31 +934,55 @@ with tab_scrape:
                 total = len(products)
                 _SB.total = total
 
-                for i, p in enumerate(products):
-                    if scraper._stop:
-                        break
-
-                    _SB.status   = f"[{i+1}/{total}] {p.name[:60]}"
-                    _SB.progress = i + 1
-
+                to_scrape = []
+                for p in products:
                     cached_item = _thread_cache.get(p.barcode, p.name)
                     if cached_item is not None:
                         counts["cached"] += 1
                         key = p.barcode if p.barcode else p.name[:60].lower()
                         _SB.results[key] = cached_item
-                        continue
-
-                    result = scraper.search(p)
-                    key = p.barcode if p.barcode else p.name[:60].lower()
-                    _SB.results[key] = result
-                    _thread_cache.put(p.barcode, p.name, result)
-
-                    if result.found:
-                        counts["found"] += 1
+                        _SB.progress += 1
                     else:
-                        counts["not_found"] += 1
+                        to_scrape.append(p)
+
+                if to_scrape:
+                    _SB.log.append(f"Scraping {len(to_scrape)} products concurrently...")
+
+                    results_dict = asyncio.run(
+                        scraper.bulk_search_async(to_scrape, concurrency=5)
+                    )
+
+                    for p in to_scrape:
+                        _SB.status   = f"Processing {p.name[:60]}"
+                        key = p.barcode if p.barcode else p.name[:60].lower()
+
+                        # Use the dictionary key from bulk search (barcode or name)
+                        res_key = p.barcode or p.name
+                        result = results_dict.get(res_key)
+
+                        if result:
+                            _SB.results[key] = result
+                            _thread_cache.put(p.barcode, p.name, result)
+                            if result.found:
+                                counts["found"] += 1
+                            else:
+                                counts["not_found"] += 1
+                        else:
+                            counts["errors"] += 1
+
+                        _SB.progress += 1
+
+                        if scraper._stop:
+                            # We don't break immediately so we can process other items
+                            # that were successfully scraped before the stop event.
+                            # Just log and continue extracting results_dict.
+                            if not hasattr(scraper, "_stop_logged"):
+                                _SB.log.append("Scraping stopped. Saving completed items...")
+                                scraper._stop_logged = True
 
             except Exception as exc:
+                import traceback
+                traceback.print_exc()
                 _SB.log.append(f"[ERROR] Fatal: {exc}")
                 counts["errors"] += 1
             finally:
