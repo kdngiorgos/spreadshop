@@ -65,7 +65,7 @@ def _similarity(a: str, b: str) -> float:
 # JSON parsing helpers (stateless — work on dicts)
 # ---------------------------------------------------------------------------
 
-def _parse_search_results_json(data: Dict[str, Any], query: str) -> Optional[SkroutzResult]:
+def _parse_search_results_json(data: Dict[str, Any], query: str, barcode_mode: bool = False) -> Optional[SkroutzResult]:
     """Parse a Skroutz search JSON response and return the best match."""
     skus = data.get("skus", [])
     if not skus:
@@ -77,7 +77,12 @@ def _parse_search_results_json(data: Dict[str, Any], query: str) -> Optional[Skr
 
     for sku in skus[:10]:
         pname = sku.get("name", "")
-        score = _similarity(query, pname)
+
+        if barcode_mode:
+            # Exact match by EAN/barcode if provided by Skroutz, else trust the API since we searched by barcode
+            score = 1.0
+        else:
+            score = _similarity(query, pname)
 
         url = sku.get("sku_url", "")
         if url and not url.startswith("http"):
@@ -111,6 +116,10 @@ def _parse_search_results_json(data: Dict[str, Any], query: str) -> Optional[Skr
                 search_query=query,
                 skroutz_id=sku.get("id"),
             )
+
+        if barcode_mode:
+            # If in barcode mode, just take the first result since the search API returned it
+            break
 
     if best_result and best_score >= SCRAPER_FUZZY_MATCH_THRESHOLD:
         return best_result
@@ -151,7 +160,10 @@ class SkroutzScraper:
         self._pause_event.set()  # unblock if currently paused
         for task in self._tasks:
             if not task.done():
-                task.cancel()
+                try:
+                    task.get_loop().call_soon_threadsafe(task.cancel)
+                except Exception:
+                    pass
 
     def pause(self) -> None:
         self._pause_event.clear()  # block search() calls at the wait point
@@ -277,7 +289,7 @@ class SkroutzScraper:
                 self.on_status(f"Retrying by barcode: {product.barcode}")
                 bc_data = await self._fetch_async(client, product.barcode)
                 if bc_data:
-                    bc_result = _parse_search_results_json(bc_data, product.barcode)
+                    bc_result = _parse_search_results_json(bc_data, product.barcode, barcode_mode=True)
                     if bc_result and bc_result.found:
                         bc_result.search_query = query  # report original query
                         result = bc_result

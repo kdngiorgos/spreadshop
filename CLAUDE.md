@@ -21,12 +21,13 @@ streamlit run app.py
 
 **Or use the deploy command:** `/deploy`
 
-### App workflow (4 tabs)
+### App workflow (5 tabs)
 
 1. **Import** — upload `.xlsx` or `.pdf` supplier files → auto-parsed, summary shown
 2. **Products** — browse the full parsed catalog with filters
 3. **Scrape** — launch concurrent async tasks using httpx to search Skroutz JSON endpoints for each product; pause/resume/stop controls; results cached
-4. **Analysis** — KPI cards + sortable table with margins, competition, opportunity scores; download XLSX report
+4. **Dashboard** — overview of scraped results
+5. **Analysis** — KPI cards + sortable table with margins, competition, opportunity scores; download XLSX report
 
 ---
 

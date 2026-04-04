@@ -475,7 +475,7 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 # ---------------------------------------------------------------------------
-# Tabs
+# App workflow (5 tabs)
 # ---------------------------------------------------------------------------
 tab_dashboard, tab_import, tab_products, tab_scrape, tab_analysis = st.tabs([
     "Dashboard", "Import", "Products", "Scrape", "Analysis"
@@ -895,15 +895,9 @@ with tab_scrape:
         running = _SB.running
 
         with st.expander("Scrape Settings", expanded=not running):
-            col_a, col_b, col_c = st.columns(3)
-            delay = col_a.slider("Delay between requests (s)", 0.0, 5.0, float(SCRAPER_DEFAULT_DELAY), step=0.1)
-            if HEADLESS_MODE:
-                col_b.checkbox("Headless (hide browser)", value=True, disabled=True)
-                headless = True
-                col_c.caption("ℹ️ Running in Docker — headless mode is forced.")
-            else:
-                headless = col_b.checkbox("Headless (hide browser)", value=False)
-                col_c.caption("ℹ️ Headed mode is safer against bot detection.")
+            delay = st.slider("Delay between requests (s)", 0.0, 5.0, float(SCRAPER_DEFAULT_DELAY), step=0.1)
+            headless = HEADLESS_MODE
+            st.caption(f"ℹ️ Scraper is configured via config.py. Using HTTPX (JSON endpoints) without browser.")
 
         # ------------------------------------------------------------------
         def _scrape_thread(products, delay, headless) -> None:
@@ -959,8 +953,6 @@ with tab_scrape:
                     )
 
                     for p in to_scrape:
-                        if scraper._stop:
-                            break
                         _SB.status   = f"Processing {p.name[:60]}"
                         key = p.barcode if p.barcode else p.name[:60].lower()
 
@@ -979,6 +971,14 @@ with tab_scrape:
                             counts["errors"] += 1
 
                         _SB.progress += 1
+
+                        if scraper._stop:
+                            # We don't break immediately so we can process other items
+                            # that were successfully scraped before the stop event.
+                            # Just log and continue extracting results_dict.
+                            if not hasattr(scraper, "_stop_logged"):
+                                _SB.log.append("Scraping stopped. Saving completed items...")
+                                scraper._stop_logged = True
 
             except Exception as exc:
                 import traceback
