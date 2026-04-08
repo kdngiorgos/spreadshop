@@ -33,17 +33,39 @@ SCORE_DEMAND_BASE      = 100  # reviews at or above this → max demand score
 # ---------------------------------------------------------------------------
 # Scraper
 # ---------------------------------------------------------------------------
-SCRAPER_DEFAULT_DELAY         = 0.1    # base seconds between requests (lowered for async JSON scraping)
-SCRAPER_DEFAULT_JITTER        = 0.1    # ± random jitter added to delay
+SCRAPER_DEFAULT_DELAY         = 1.5    # base seconds between requests
+SCRAPER_DEFAULT_JITTER        = 0.5    # ± random jitter added to delay
 SCRAPER_PAGE_TIMEOUT_MS       = 30000  # Request timeout (ms)
 SCRAPER_FUZZY_MATCH_THRESHOLD = 0.35   # min SequenceMatcher ratio for a valid match
+SCRAPER_CONCURRENCY           = 2      # max parallel async workers
+SCRAPER_MAX_RETRIES           = 3      # retry attempts on 429/503 before giving up
 
 # ---------------------------------------------------------------------------
 # Runtime environment
 # ---------------------------------------------------------------------------
 import os
+
+# Load .env if present (ignored by git)
+def _load_env() -> None:
+    env_path = os.path.join(os.path.dirname(__file__), ".env")
+    if not os.path.exists(env_path):
+        return
+    with open(env_path) as f:
+        for line in f:
+            line = line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            k, v = line.split("=", 1)
+            os.environ.setdefault(k.strip(), v.strip())
+
+_load_env()
+
 # Set SPREADSHOP_HEADLESS=true (e.g. in Docker) to force headless Chromium.
 HEADLESS_MODE: bool = os.environ.get("SPREADSHOP_HEADLESS", "false").lower() == "true"
+
+# Scraper source: "serpapi" (default) or "skroutz" (legacy, requires curl_cffi)
+SCRAPER_SOURCE: str = os.environ.get("SPREADSHOP_SCRAPER", "serpapi")
+SERPAPI_KEY:    str = os.environ.get("SERPAPI_KEY", "")
 
 # ---------------------------------------------------------------------------
 # Cache

@@ -44,7 +44,7 @@ Parses all 3 test files, validates price ratios, runs analysis with mock Skroutz
 ## Architecture
 
 ```
-app.py                      Streamlit UI (4 tabs, session state, threading)
+app.py                      Streamlit UI (5 tabs, session state, threading)
 parsers/
   base.py                   ProductRecord, SkroutzResult, ParseError dataclasses + parse_file() dispatcher
   xlsx_parser.py            Bio Tonics XLSX (openpyxl, handles category header rows)
@@ -158,6 +158,14 @@ Important JSON response fields used by the parser:
 - `shop_count`: Number of shops selling the item.
 - `review_score`: Rating string (e.g. "4,7").
 - `reviews_count`: Number of reviews.
+- `id`: SKU id — used for the second-step `filter_products.json` call.
+
+#### Second-step: `filter_products.json`
+Once a SKU id is found, the scraper fetches:
+```
+https://www.skroutz.gr/s/{skroutz_id}/filter_products.json
+```
+This returns `product_cards` with per-variant prices (`final_price`) and an accurate `shop_count`. The scraper uses this to set `lowest_price` and `highest_price` on the result.
 
 ### `SkroutzScraper` config
 
@@ -173,7 +181,7 @@ The scraper handles JSON responses by fuzz-matching the results with the query a
 
 ### Cache
 
-File: `cache/skroutz_cache.json`. Key: barcode (preferred) or product name (truncated). TTL: 24 hours. All 200 products take ~15-20 minutes to scrape from scratch; the cache makes subsequent runs instant.
+File: `cache/skroutz_cache.json`. Key: barcode (preferred) or product name (truncated). TTL: 24 hours. All 200 products take ~1-2 minutes to scrape from scratch (async concurrent, 5 workers, 0.1s delay); the cache makes subsequent runs instant.
 
 ---
 

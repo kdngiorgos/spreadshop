@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/playwright/python:v1.58.0-jammy
+FROM python:3.11-slim
 
 WORKDIR /app
 
@@ -6,15 +6,10 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Playwright browsers are pre-installed in the base image;
-# ensure chromium specifically is available.
-RUN python -m playwright install chromium
-
 # Copy application code
 COPY . .
 
 # Streamlit config
-ENV SPREADSHOP_HEADLESS=true
 ENV STREAMLIT_SERVER_PORT=8501
 ENV STREAMLIT_SERVER_ADDRESS=0.0.0.0
 ENV STREAMLIT_SERVER_HEADLESS=true

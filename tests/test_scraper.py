@@ -1,4 +1,5 @@
 import pytest
+curl_cffi = pytest.importorskip("curl_cffi", reason="curl_cffi not installed — skipping Skroutz scraper tests")
 from scraper.skroutz import _parse_search_results_json
 
 def test_parse_search_results_json():

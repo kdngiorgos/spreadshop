@@ -11,8 +11,7 @@ Streamlit main thread.  The thread writes here; the UI reads from here.
 from __future__ import annotations
 from typing import TYPE_CHECKING, Optional
 
-if TYPE_CHECKING:
-    from scraper.skroutz import SkroutzScraper
+import threading
 
 # --- mutable state ---
 running: bool        = False
@@ -24,4 +23,5 @@ counts: dict         = {"found": 0, "not_found": 0, "cached": 0, "errors": 0}
 results: dict        = {}   # barcode/name key → SkroutzResult
 scraped_at           = None  # datetime | None
 analyses_ready: bool = False  # True when thread finishes; cleared by UI after pickup
-scraper              = None   # SkroutzScraper instance while running, else None
+scraper              = None   # scraper instance while running (for pause/resume), else None
+stop_event: threading.Event = threading.Event()  # set() to request early stop

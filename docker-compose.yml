@@ -1,6 +1,7 @@
 services:
   spreadshop:
     build: .
+    env_file: .env
     ports:
       - "8080:8501"
     volumes:
