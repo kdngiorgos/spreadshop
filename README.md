@@ -6,6 +6,18 @@ Built with Streamlit · Python 3.11 · httpx async · SerpAPI / Skroutz JSON
 
 ---
 
+## Screenshots
+
+| Landing | Upload |
+|---|---|
+| ![Landing](docs/screenshot_landing.png) | ![Upload](docs/screenshot_upload.png) |
+
+| Fetch Prices | Results |
+|---|---|
+| ![Fetch](docs/screenshot_fetch.png) | ![Results](docs/screenshot_results.png) |
+
+---
+
 ## What It Does
 
 Greek resellers deal with supplier catalogs (XLSX/PDF) containing hundreds of products and wholesale prices. Without knowing what those products sell for on Skroutz.gr — Greece's dominant price-comparison marketplace — it's impossible to know which items are profitable.
