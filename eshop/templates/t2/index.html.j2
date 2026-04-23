@@ -1,0 +1,224 @@
+{% extends "base.html.j2" %}
+
+{% block title %}{{ site.name }} — Κατάλογος{% endblock %}
+
+{% block content %}
+
+<!-- ── STATEMENT HEADER ───────────────────────────────────────── -->
+<section class="max-w-6xl mx-auto px-6 pt-16 pb-10">
+  <div class="max-w-2xl">
+    <p class="text-xs font-semibold uppercase tracking-widest mb-4"
+       style="color: var(--accent)">Νέα συλλογή</p>
+    <h1 class="text-4xl sm:text-5xl font-black tracking-tighter leading-none text-gray-900 mb-6">
+      {{ site.headline }}
+    </h1>
+    <p class="text-base text-gray-400 leading-relaxed max-w-md">
+      {{ site.subheadline }}
+    </p>
+  </div>
+</section>
+
+<!-- ── DIVIDER + CATEGORY TABS ────────────────────────────────── -->
+<div class="border-b border-gray-100 sticky top-16 bg-white z-30">
+  <div class="max-w-6xl mx-auto px-6">
+    <div class="flex items-end gap-0 overflow-x-auto scrollbar-hide -mb-px">
+      <!-- "All" tab -->
+      <button class="filter-pill-tab active" data-category="all">
+        Όλα
+        <span class="tab-count">({{ product_count }})</span>
+      </button>
+      {% for cat in categories %}
+      <button class="filter-pill-tab" data-category="{{ cat.name }}">
+        {{ cat.name }}
+        <span class="tab-count">({{ cat.count }})</span>
+      </button>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<!-- ── RESULTS BAR ────────────────────────────────────────────── -->
+<div class="max-w-6xl mx-auto px-6 py-5 flex items-center justify-between">
+  <p id="results-count" class="text-sm text-gray-400">{{ product_count }} προϊόντα</p>
+</div>
+
+<!-- ── PRODUCT GRID ───────────────────────────────────────────── -->
+<div class="max-w-6xl mx-auto px-6 pb-20">
+  <div id="product-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+
+    {% for p in products %}
+    <div class="product-card-elevate"
+         data-category="{{ p.category }}"
+         data-name="{{ p.name | lower }}">
+
+      <!-- Image: large, prominent -->
+      <a href="product/{{ p.slug }}.html" class="block">
+        <div class="elevate-image-wrap" style="background: {{ p.bg_color }}09;">
+          {% if p.image_url %}
+          <img src="{{ p.image_url }}" alt="{{ p.name }}" loading="lazy" class="elevate-image">
+          {% else %}
+          <img src="static/placeholder.svg" alt="{{ p.name }}" loading="lazy" class="elevate-image">
+          {% endif %}
+          {% if p.signal == "strong_buy" %}
+          <div class="absolute top-3 right-3">
+            <span class="elevate-badge-hot">&#9733; Επιλογή</span>
+          </div>
+          {% endif %}
+        </div>
+      </a>
+
+      <!-- Info: editorial layout -->
+      <div class="elevate-info">
+        <div class="elevate-cat">{{ p.category }}</div>
+        <a href="product/{{ p.slug }}.html" class="elevate-name">{{ p.name }}</a>
+        <div class="elevate-footer">
+          <span class="elevate-price">€{{ "%.2f" | format(p.price) }}</span>
+          <button class="elevate-cart-btn"
+            onclick="addToCart('{{ p.id }}', {{ p.name | tojson }}, {{ p.price }})">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M12 4v16m8-8H4"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+    </div>
+    {% endfor %}
+
+  </div>
+
+  <!-- Empty state -->
+  <div id="empty-state" class="empty-state" style="display:none">
+    <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+    </svg>
+    <p class="mt-3 font-semibold text-gray-500">Δεν βρέθηκαν αποτελέσματα</p>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block head %}
+<style>
+/* ── T2: ELEVATE OVERRIDES ──────────────────────────────── */
+.filter-pill-tab {
+  padding: 12px 20px 14px;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: #9ca3af;
+  white-space: nowrap;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.15s;
+  background: none;
+  border-radius: 0;
+}
+.filter-pill-tab .tab-count {
+  font-size: 0.7rem;
+  opacity: 0.6;
+  margin-left: 3px;
+}
+.filter-pill-tab:hover { color: #374151; }
+.filter-pill-tab.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+  font-weight: 600;
+}
+
+.product-card-elevate {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.elevate-image-wrap {
+  position: relative;
+  border-radius: 16px;
+  overflow: hidden;
+  aspect-ratio: 4/3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+.product-card-elevate:hover .elevate-image-wrap {
+  box-shadow: 0 16px 48px -8px rgba(0,0,0,0.12);
+}
+.elevate-image {
+  width: 55%;
+  height: 55%;
+  object-fit: contain;
+  transition: transform 0.3s ease;
+}
+.product-card-elevate:hover .elevate-image {
+  transform: scale(1.08);
+}
+.elevate-badge-hot {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: white;
+}
+.elevate-info {
+  padding: 16px 4px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.elevate-cat {
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.elevate-name {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #111827;
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-decoration: none;
+  transition: color 0.15s;
+}
+.elevate-name:hover { color: var(--accent); }
+.elevate-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 8px;
+}
+.elevate-price {
+  font-size: 1.2rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: #111827;
+}
+.elevate-cart-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 1.5px solid #e5e7eb;
+  background: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s;
+  color: #374151;
+}
+.elevate-cart-btn:hover {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: white;
+  transform: scale(1.05);
+}
+</style>
+{% endblock %}

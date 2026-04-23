@@ -32,6 +32,7 @@ class SkroutzResult:
     match_confidence: float = 0.0
     search_query: str = ""
     skroutz_id: Optional[int] = None
+    image_url: str = ""   # product image from Skroutz CDN; empty → placeholder shown
 
 
 @dataclass

@@ -1,0 +1,113 @@
+{% extends "base.html.j2" %}
+
+{% block title %}{{ product.name }} — {{ site.name }}{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto px-6 py-12">
+
+  <!-- Back -->
+  <a href="{{ store_root }}"
+     class="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-widest
+            text-gray-400 hover:text-gray-900 transition-colors mb-10">
+    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+    </svg>
+    Πίσω στον κατάλογο
+  </a>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-16">
+
+    <!-- Image block -->
+    <div>
+      <div class="rounded-2xl flex items-center justify-center"
+           style="background: {{ product.bg_color }}0c; aspect-ratio: 1; padding: 60px;">
+        {% if product.image_url %}
+        <img src="{{ product.image_url }}" alt="{{ product.name }}"
+             class="max-w-full max-h-72 object-contain" style="filter: drop-shadow(0 8px 24px rgba(0,0,0,0.08))">
+        {% else %}
+        <img src="../static/placeholder.svg" alt="{{ product.name }}"
+             class="max-w-full max-h-72 object-contain" style="filter: drop-shadow(0 8px 24px rgba(0,0,0,0.08))">
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Details -->
+    <div class="flex flex-col justify-center gap-6">
+
+      <div>
+        <p class="text-xs font-bold uppercase tracking-widest mb-3"
+           style="color: var(--accent)">{{ product.category }}</p>
+        <h1 class="text-3xl font-black tracking-tight leading-tight text-gray-900 mb-4">
+          {{ product.name }}
+        </h1>
+        {% if product.signal == "strong_buy" %}
+        <span class="inline-block text-xs font-bold uppercase tracking-widest px-3 py-1 rounded-full"
+              style="background: var(--accent)15; color: var(--accent)">&#9733; Κορυφαία Επιλογή</span>
+        {% endif %}
+      </div>
+
+      <div class="flex items-baseline gap-3">
+        <span class="text-4xl font-black tracking-tighter" style="color: var(--accent)">
+          €{{ "%.2f" | format(product.price) }}
+        </span>
+        <span class="text-sm text-gray-400">συμπ. ΦΠΑ</span>
+      </div>
+
+      <div class="h-px bg-gray-100"></div>
+
+      <!-- Qty + add -->
+      <div class="flex items-center gap-4">
+        <div class="flex items-center border border-gray-200 rounded-full overflow-hidden">
+          <button onclick="adjustQty(-1)"
+            class="w-10 h-10 flex items-center justify-center text-gray-600
+                   hover:bg-gray-50 transition-colors text-lg">−</button>
+          <span id="qty-display"
+            class="w-10 h-10 flex items-center justify-center text-sm font-bold">1</span>
+          <button onclick="adjustQty(1)"
+            class="w-10 h-10 flex items-center justify-center text-gray-600
+                   hover:bg-gray-50 transition-colors text-lg">+</button>
+        </div>
+        <button class="flex-1 py-3 px-6 rounded-full font-bold text-sm text-white
+                       transition-all hover:opacity-90 active:scale-[0.98]"
+                style="background: var(--accent)"
+                onclick="addToCartQty('{{ product.id }}', {{ product.name | tojson }}, {{ product.price }})">
+          Προσθήκη στο καλάθι
+        </button>
+      </div>
+
+      <!-- Features -->
+      <div class="grid grid-cols-2 gap-3 pt-2">
+        {% for icon, text in [("M5 13l4 4L19 7", "Άμεσα διαθέσιμο"), ("M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4", "Αποστολή 1–3 ημ."), ("M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z", "Ασφαλής πληρωμή"), ("M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15", "Επιστροφή 14 ημ.")] %}
+        <div class="flex items-center gap-2 text-xs text-gray-400">
+          <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="{{ icon }}"/>
+          </svg>
+          {{ text }}
+        </div>
+        {% endfor %}
+      </div>
+
+      {% if product.skroutz_url %}
+      <a href="{{ product.skroutz_url }}" target="_blank" rel="noopener"
+         class="text-xs text-blue-400 hover:text-blue-500 transition-colors inline-flex items-center gap-1">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+        </svg>
+        Σύγκριση τιμών στο Skroutz
+      </a>
+      {% endif %}
+
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  var _qty = 1;
+  function adjustQty(d) { _qty = Math.max(1, _qty + d); document.getElementById("qty-display").textContent = _qty; }
+  function addToCartQty(id, name, price) { for (var i = 0; i < _qty; i++) addToCart(id, name, price); }
+</script>
+{% endblock %}

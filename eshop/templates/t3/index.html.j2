@@ -1,0 +1,244 @@
+{% extends "base.html.j2" %}
+
+{% block title %}{{ site.name }} — {{ category_count }} Κατηγορίες, {{ product_count }} Προϊόντα{% endblock %}
+
+{% block content %}
+
+<!-- ── CATEGORY NAVIGATION ────────────────────────────────────── -->
+<div class="bg-white border-b border-gray-200">
+  <div class="max-w-7xl mx-auto px-4">
+    <div class="flex items-center overflow-x-auto gap-1 py-2 scrollbar-hide">
+      <button class="filter-pill-market active" data-category="all">
+        Όλα τα Προϊόντα
+      </button>
+      {% for cat in categories %}
+      <button class="filter-pill-market" data-category="{{ cat.name }}">
+        {{ cat.name }}
+        <span class="text-xs opacity-60 ml-1">({{ cat.count }})</span>
+      </button>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<!-- ── CONTENT AREA ───────────────────────────────────────────── -->
+<div class="max-w-7xl mx-auto px-4 py-6">
+
+  <!-- FEATURED PRODUCTS (top 3 strong buys) -->
+  {% set featured = products | selectattr("signal", "equalto", "strong_buy") | list | sort(attribute="margin_pct", reverse=True) %}
+  {% if featured %}
+  <section class="mb-8">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-lg font-bold text-gray-900 flex items-center gap-2">
+        <span style="color:var(--accent)">&#9733;</span>
+        Κορυφαίες Επιλογές
+      </h2>
+      <span class="text-xs text-gray-400">{{ featured | length }} προϊόντα</span>
+    </div>
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      {% for p in featured[:3] %}
+      <a href="product/{{ p.slug }}.html"
+         class="market-featured-card group">
+        <div class="market-featured-img" style="background: {{ p.bg_color }}12;">
+          {% if p.image_url %}
+          <img src="{{ p.image_url }}" alt="{{ p.name }}"
+               class="w-20 h-20 object-contain group-hover:scale-105 transition-transform">
+          {% else %}
+          <img src="static/placeholder.svg" alt="{{ p.name }}"
+               class="w-20 h-20 object-contain group-hover:scale-105 transition-transform">
+          {% endif %}
+        </div>
+        <div class="p-4">
+          <div class="text-xs font-semibold uppercase tracking-wide mb-1" style="color:var(--accent)">
+            {{ p.category }}
+          </div>
+          <div class="text-sm font-semibold text-gray-900 leading-snug line-clamp-2 mb-2">
+            {{ p.name }}
+          </div>
+          <div class="text-xl font-extrabold" style="color:var(--accent)">
+            €{{ "%.2f" | format(p.price) }}
+          </div>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+
+  <!-- Results bar -->
+  <div class="flex items-center justify-between mb-4">
+    <h2 class="text-base font-bold text-gray-900">Όλα τα Προϊόντα</h2>
+    <span id="results-count" class="text-sm text-gray-400">{{ product_count }} προϊόντα</span>
+  </div>
+
+  <!-- ── PRODUCT GRID ─────────────────────────────────────────── -->
+  <div id="product-grid"
+       class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+
+    {% for p in products %}
+    <div class="market-card"
+         data-category="{{ p.category }}"
+         data-name="{{ p.name | lower }}">
+
+      <!-- Image area -->
+      <a href="product/{{ p.slug }}.html" class="block relative">
+        <div class="market-card-img" style="background: {{ p.bg_color }}0f;">
+          {% if p.image_url %}
+          <img src="{{ p.image_url }}" alt="{{ p.name }}" loading="lazy" class="w-16 h-16 object-contain">
+          {% else %}
+          <img src="static/placeholder.svg" alt="{{ p.name }}" loading="lazy" class="w-16 h-16 object-contain">
+          {% endif %}
+        </div>
+        {% if p.signal == "strong_buy" %}
+        <div class="absolute top-1.5 left-1.5">
+          <span class="market-badge-pick">&#9733; Top</span>
+        </div>
+        {% elif p.signal == "consider" %}
+        <div class="absolute top-1.5 left-1.5">
+          <span class="market-badge-ok">Αξίζει</span>
+        </div>
+        {% endif %}
+      </a>
+
+      <!-- Info -->
+      <div class="p-3 flex flex-col gap-2 flex-1">
+        <div class="text-xs text-gray-400 truncate">{{ p.category }}</div>
+        <a href="product/{{ p.slug }}.html"
+           class="text-xs sm:text-sm font-medium text-gray-800 leading-snug
+                  hover:text-[color:var(--accent)] transition-colors line-clamp-3 flex-1">
+          {{ p.name }}
+        </a>
+
+        <!-- Rating stub -->
+        <div class="flex items-center gap-1">
+          <div class="flex text-yellow-400 text-xs">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+          <span class="text-xs text-gray-400">({{ range(8, 45) | random }})</span>
+        </div>
+
+        <!-- Price + Cart -->
+        <div class="flex items-center justify-between gap-1 mt-auto">
+          <div>
+            <div class="text-base font-extrabold text-gray-900">
+              €{{ "%.2f" | format(p.price) }}
+            </div>
+          </div>
+        </div>
+        <button class="market-add-btn"
+          onclick="addToCart('{{ p.id }}', {{ p.name | tojson }}, {{ p.price }})">
+          + Καλάθι
+        </button>
+      </div>
+
+    </div>
+    {% endfor %}
+
+  </div>
+
+  <!-- Empty state -->
+  <div id="empty-state" class="empty-state" style="display:none">
+    <svg class="w-14 h-14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+            d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+    </svg>
+    <p class="font-semibold text-gray-500 mt-2">Δεν βρέθηκαν προϊόντα</p>
+    <p class="text-xs mt-1">Δοκιμάστε άλλη αναζήτηση</p>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block head %}
+<style>
+/* ── T3: MARKET OVERRIDES ─────────────────────────────── */
+.filter-pill-market {
+  flex-shrink: 0;
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  font-weight: 500;
+  cursor: pointer;
+  border: 1px solid transparent;
+  background: transparent;
+  color: #4b5563;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.filter-pill-market:hover { background: #f3f4f6; color: #111827; }
+.filter-pill-market.active {
+  background: var(--accent);
+  color: white;
+  font-weight: 600;
+}
+
+/* Featured card */
+.market-featured-card {
+  background: white;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  overflow: hidden;
+  display: block;
+  text-decoration: none;
+  transition: box-shadow 0.18s, transform 0.18s;
+}
+.market-featured-card:hover {
+  box-shadow: 0 8px 24px -4px rgba(0,0,0,0.1);
+  transform: translateY(-2px);
+}
+.market-featured-img {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+/* Regular card */
+.market-card {
+  background: white;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: box-shadow 0.18s;
+}
+.market-card:hover { box-shadow: 0 6px 20px -4px rgba(0,0,0,0.1); }
+.market-card-img {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  aspect-ratio: 1;
+}
+.market-badge-pick {
+  font-size: 0.6rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: white;
+  letter-spacing: 0.04em;
+}
+.market-badge-ok {
+  font-size: 0.6rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: #fef3c7;
+  color: #92400e;
+}
+.market-add-btn {
+  width: 100%;
+  padding: 8px;
+  border-radius: 7px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: white;
+  background: var(--accent);
+  cursor: pointer;
+  border: none;
+  transition: opacity 0.15s, transform 0.12s;
+}
+.market-add-btn:hover { opacity: 0.88; }
+.market-add-btn:active { transform: scale(0.97); }
+</style>
+{% endblock %}

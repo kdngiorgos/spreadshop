@@ -72,4 +72,10 @@ SERPAPI_KEY:    str = os.environ.get("SERPAPI_KEY", "")
 # ---------------------------------------------------------------------------
 CACHE_TTL_SECONDS    = 60 * 60 * 24  # 24 hours
 CACHE_DIR            = "cache"
-CACHE_SCHEMA_VERSION = 1             # bump when SkroutzResult fields change
+CACHE_SCHEMA_VERSION = 2             # bump when SkroutzResult fields change
+
+# ---------------------------------------------------------------------------
+# E-shop generator
+# ---------------------------------------------------------------------------
+ESHOP_PORT       = 8082              # local preview server port
+ESHOP_OUTPUT_DIR = "eshop_output"    # directory for generated static site

@@ -16,8 +16,9 @@ from scraper.cache import ScrapeCache
 from scraper import get_scraper
 from analysis.compare import ProductAnalysis, analyze
 from analysis.export import generate_xlsx
-from config import HEADLESS_MODE, SCRAPER_DEFAULT_DELAY, SCRAPER_CONCURRENCY, SCRAPER_SOURCE, SERPAPI_KEY
+from config import HEADLESS_MODE, SCRAPER_DEFAULT_DELAY, SCRAPER_CONCURRENCY, SCRAPER_SOURCE, SERPAPI_KEY, ESHOP_PORT, ESHOP_OUTPUT_DIR
 import scrape_buffer as _SB
+import eshop_buffer as _EB
 
 setup_logging()
 
@@ -405,6 +406,18 @@ def _init_state() -> None:
         "scrape_paused":  False,
         "last_scraped_at": None,
         "advanced_mode":  False,
+        # E-shop screen
+        "eshop_url":         None,    # "http://localhost:NNNN" when server is running
+        "eshop_output_dir":  None,    # Path of last generated site
+        "eshop_store_name":  "",      # store name entered by user
+        "eshop_color":       "green", # selected color scheme key
+        "eshop_template":    "t1",   # selected template: t1, t2, or t3
+        "eshop_tagline":     "",      # short tagline shown in footer
+        "eshop_headline":    "",      # hero headline
+        "eshop_subheadline": "",      # hero supporting text
+        "eshop_logo_bytes":  None,    # raw bytes of uploaded logo file
+        "eshop_logo_ext":    "png",   # file extension of uploaded logo
+        "eshop_font":        "modern",# font pairing key
     }
     for k, v in defaults.items():
         if k not in st.session_state:
@@ -448,11 +461,16 @@ def _go(screen: str) -> None:
 # Wizard nav bar  (used on upload / fetch / results screens)
 # ---------------------------------------------------------------------------
 def _render_wizard_nav(step: int) -> None:
-    step_labels = {1: "Step 1 of 3 — Load Catalog", 2: "Step 2 of 3 — Fetch Prices", 3: "Your Results"}
+    step_labels = {
+        1: "Step 1 of 4 — Load Catalog",
+        2: "Step 2 of 4 — Fetch Prices",
+        3: "Step 3 of 4 — Your Results",
+        4: "Step 4 of 4 — Build E-Shop",
+    }
 
     dots_html = "".join(
         f'<span class="step-dot {("active" if i == step else "done" if i < step else "")}"></span>'
-        for i in range(1, 4)
+        for i in range(1, 5)
     )
 
     col_l, col_c, col_r = st.columns([1, 3, 1])
@@ -476,6 +494,9 @@ def _render_wizard_nav(step: int) -> None:
                 st.session_state["skroutz_results"] = {}
                 st.session_state["last_scraped_at"] = None
                 _go("landing")
+        elif step == 4:
+            if st.button("← Results", use_container_width=True):
+                _go("results")
         elif step in (1, 2):
             back_screen = "landing" if step == 1 else "upload"
             if st.button("← Back", use_container_width=True):
@@ -992,6 +1013,14 @@ def _render_results() -> None:
         col_dl2.caption(
             f"Includes: Opportunities \u00b7 {len(not_found)} not-found products \u00b7 Parse errors"
         )
+        st.markdown("<br>", unsafe_allow_html=True)
+        n_eshop = len([a for a in analyses if a.recommendation in ("strong_buy", "consider") and a.skroutz.found])
+        if n_eshop > 0:
+            st.markdown("#### Build Your E-Shop")
+            c1, c2 = st.columns([2, 5])
+            if c1.button(f"Build E-Shop ({n_eshop} products) →", type="primary", use_container_width=True):
+                _go("eshop")
+            c2.caption("Generate a ready-to-preview online store from your best products.")
         return
 
     # ============================================================
@@ -1282,6 +1311,249 @@ def _render_results() -> None:
         f"Includes: Opportunities · {len(not_found)} not-found products · Parse errors"
     )
 
+    st.markdown("<br>", unsafe_allow_html=True)
+    n_eshop_adv = len([a for a in analyses if a.recommendation in ("strong_buy", "consider") and a.skroutz.found])
+    if n_eshop_adv > 0:
+        st.markdown("#### Build Your E-Shop")
+        ca1, ca2 = st.columns([2, 5])
+        if ca1.button(f"Build E-Shop ({n_eshop_adv} products) →", type="primary", use_container_width=True, key="adv_eshop_btn"):
+            _go("eshop")
+
+
+# ===========================================================================
+# SCREEN: E-SHOP  (Step 4 — Generate & preview local e-shop)
+# ===========================================================================
+def _render_eshop() -> None:
+    import functools
+    import http.server
+    import io
+    import threading
+    import zipfile
+    from pathlib import Path
+
+    from eshop import generate_eshop
+    from eshop.site_config import COLOR_SCHEMES, FONT_OPTIONS, default_site_config
+
+    _render_wizard_nav(4)
+    ss = st.session_state
+
+    analyses: list[ProductAnalysis] = ss.get("analyses", [])
+    if not analyses:
+        st.warning("No analysis data found. Go back and fetch market prices first.")
+        return
+
+    # Products eligible for the e-shop
+    eligible = [a for a in analyses if a.recommendation in ("strong_buy", "consider") and a.skroutz.found]
+    strong   = [a for a in eligible if a.recommendation == "strong_buy"]
+    consider = [a for a in eligible if a.recommendation == "consider"]
+
+    # ── Step heading ──────────────────────────────────────────────
+    st.markdown('<div class="step-heading">Build Your E-Shop</div>', unsafe_allow_html=True)
+    st.markdown(
+        '<div class="step-sub">Configure your store, select products, and launch a live preview in one click.</div>',
+        unsafe_allow_html=True,
+    )
+
+    # ── Store settings ────────────────────────────────────────────
+    TEMPLATE_OPTIONS = {
+        "t1": "Modern — gradient hero, 5-col grid, pill category filters",
+        "t2": "Elevate — premium editorial, large cards, tab category nav",
+        "t3": "Market  — traditional e-shop, featured products, compact grid",
+    }
+    with st.expander("Store Settings", expanded=True):
+        cfg_c1, cfg_c2 = st.columns(2)
+        with cfg_c1:
+            store_name = st.text_input(
+                "Store Name",
+                value=ss.get("eshop_store_name") or "My Shop",
+                placeholder="π.χ. Atcare Health Shop",
+            )
+            ss["eshop_store_name"] = store_name
+
+            tagline = st.text_input(
+                "Tagline",
+                value=ss.get("eshop_tagline") or "",
+                placeholder="Ποιοτικά προϊόντα σε ανταγωνιστικές τιμές",
+            )
+            ss["eshop_tagline"] = tagline
+
+            headline = st.text_input(
+                "Hero Headline",
+                value=ss.get("eshop_headline") or "",
+                placeholder="Ποιοτικά προϊόντα για κάθε ανάγκη.",
+            )
+            ss["eshop_headline"] = headline
+
+            subheadline = st.text_input(
+                "Hero Subheadline",
+                value=ss.get("eshop_subheadline") or "",
+                placeholder="Επιλεγμένα προϊόντα από αξιόπιστους προμηθευτές.",
+            )
+            ss["eshop_subheadline"] = subheadline
+
+        with cfg_c2:
+            scheme_options = list(COLOR_SCHEMES.keys())
+            scheme_labels  = [COLOR_SCHEMES[k]["label"] for k in scheme_options]
+            current_idx    = scheme_options.index(ss.get("eshop_color", "green"))
+            chosen_idx     = st.selectbox(
+                "Accent Color",
+                range(len(scheme_options)),
+                index=current_idx,
+                format_func=lambda i: scheme_labels[i],
+            )
+            ss["eshop_color"] = scheme_options[chosen_idx]
+
+            font_keys   = list(FONT_OPTIONS.keys())
+            font_labels = [FONT_OPTIONS[k]["label"] for k in font_keys]
+            current_font_idx = font_keys.index(ss.get("eshop_font", "modern"))
+            chosen_font_idx  = st.selectbox(
+                "Font",
+                range(len(font_keys)),
+                index=current_font_idx,
+                format_func=lambda i: font_labels[i],
+            )
+            ss["eshop_font"] = font_keys[chosen_font_idx]
+
+            logo_file = st.file_uploader(
+                "Store Logo (PNG / JPG / SVG)",
+                type=["png", "jpg", "jpeg", "svg"],
+                help="Shown in the navigation bar. Leave empty to use store name text.",
+            )
+            if logo_file is not None:
+                ss["eshop_logo_bytes"] = logo_file.read()
+                ext = logo_file.name.rsplit(".", 1)[-1].lower()
+                ss["eshop_logo_ext"]   = "svg" if ext == "svg" else ext
+            if ss.get("eshop_logo_bytes"):
+                st.caption(f"Logo uploaded ({ss['eshop_logo_ext'].upper()})")
+
+        st.markdown("**Template Design**")
+        tmpl_keys   = list(TEMPLATE_OPTIONS.keys())
+        current_tmpl = ss.get("eshop_template", "t1")
+        chosen_tmpl  = st.radio(
+            "Template",
+            tmpl_keys,
+            index=tmpl_keys.index(current_tmpl),
+            format_func=lambda k: TEMPLATE_OPTIONS[k],
+            horizontal=False,
+            label_visibility="collapsed",
+        )
+        ss["eshop_template"] = chosen_tmpl
+
+    # ── Product selection ─────────────────────────────────────────
+    st.markdown("#### Product Selection")
+    col_sel_a, col_sel_b = st.columns(2)
+    include_strong  = col_sel_a.checkbox(f"Include Strong Buy ({len(strong)} products)",  value=True)
+    include_consider = col_sel_b.checkbox(f"Include Consider ({len(consider)} products)", value=True)
+
+    selected = []
+    if include_strong:
+        selected.extend(strong)
+    if include_consider:
+        selected.extend(consider)
+
+    if not selected:
+        st.info("Select at least one product tier above.")
+        return
+
+    n_cats = len({(a.product.category or "Γενικά") for a in selected})
+    st.caption(f"{len(selected)} products · {n_cats} categories will be included")
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    # ── Generate button ───────────────────────────────────────────
+    server_running = _EB.server is not None
+
+    if not server_running:
+        if st.button("Generate & Launch E-Shop", type="primary", use_container_width=False):
+            output_dir = Path(ESHOP_OUTPUT_DIR)
+            site_cfg   = default_site_config(
+                store_name=ss.get("eshop_store_name") or "My Shop",
+                color_scheme=ss.get("eshop_color", "green"),
+                tagline=ss.get("eshop_tagline") or "",
+                headline=ss.get("eshop_headline") or "",
+                subheadline=ss.get("eshop_subheadline") or "",
+                font=ss.get("eshop_font") or "modern",
+            )
+            # Attach logo bytes so generator can write them to static/
+            site_cfg["logo_bytes"] = ss.get("eshop_logo_bytes")
+            site_cfg["logo_ext"]   = ss.get("eshop_logo_ext") or "png"
+            with st.spinner("Building your e-shop…"):
+                generate_eshop(selected, output_dir, site_cfg, template=ss.get("eshop_template", "t1"))
+
+            # Start local HTTP server
+            class _SilentHandler(http.server.SimpleHTTPRequestHandler):
+                def log_message(self, *_): pass
+
+            handler = functools.partial(_SilentHandler, directory=str(output_dir))
+            srv     = http.server.HTTPServer(("0.0.0.0", ESHOP_PORT), handler)
+            thread  = threading.Thread(target=srv.serve_forever, daemon=True)
+            thread.start()
+
+            _EB.server     = srv
+            _EB.output_dir = output_dir
+            # Use the host-side URL (port is mapped 8082→8082 in docker-compose)
+            ss["eshop_url"] = f"http://localhost:{ESHOP_PORT}"
+            ss["eshop_output_dir"] = str(output_dir)
+            st.rerun()
+    else:
+        # ── Running state ─────────────────────────────────────────
+        eshop_url = ss.get("eshop_url", f"http://localhost:{ESHOP_PORT}")
+
+        st.markdown(f"""
+        <div style="background:var(--accent-dim);border:1px solid var(--accent-mid);border-radius:12px;
+                    padding:20px 24px;margin-bottom:24px;">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+            <span style="color:var(--accent);font-size:1.1rem;">&#9679;</span>
+            <span style="color:var(--accent-text);font-weight:700;font-family:'DM Mono',monospace;
+                         font-size:0.85rem;letter-spacing:0.03em;">E-SHOP RUNNING</span>
+          </div>
+          <div style="font-size:0.9rem;color:var(--text-secondary);margin-bottom:8px;">Preview URL:</div>
+          <a href="{eshop_url}" target="_blank"
+             style="font-family:'DM Mono',monospace;font-size:1rem;color:var(--accent-text);
+                    text-decoration:none;font-weight:600;">
+            {eshop_url} ↗
+          </a>
+        </div>
+        """, unsafe_allow_html=True)
+
+        btn_c1, btn_c2 = st.columns([1, 1])
+
+        with btn_c1:
+            if st.button("Stop Server", use_container_width=True):
+                if _EB.server:
+                    _EB.server.shutdown()
+                    _EB.server = None
+                    _EB.output_dir = None
+                ss["eshop_url"] = None
+                st.rerun()
+
+        with btn_c2:
+            # Build ZIP in memory
+            output_path = Path(ss.get("eshop_output_dir") or ESHOP_OUTPUT_DIR)
+            if output_path.exists():
+                buf = io.BytesIO()
+                with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
+                    for fpath in output_path.rglob("*"):
+                        if fpath.is_file():
+                            zf.write(fpath, fpath.relative_to(output_path))
+                buf.seek(0)
+                st.download_button(
+                    label="Download Site ZIP",
+                    data=buf.read(),
+                    file_name=f"{(ss.get('eshop_store_name') or 'eshop').replace(' ','-').lower()}-site.zip",
+                    mime="application/zip",
+                    use_container_width=True,
+                )
+
+        # Rebuild option
+        st.markdown("<br>", unsafe_allow_html=True)
+        if st.button("Rebuild with New Settings", use_container_width=False):
+            if _EB.server:
+                _EB.server.shutdown()
+                _EB.server = None
+            ss["eshop_url"] = None
+            st.rerun()
+
 
 # ===========================================================================
 # MAIN — screen routing
@@ -1296,5 +1568,7 @@ elif screen == "fetch":
     _render_fetch()
 elif screen == "results":
     _render_results()
+elif screen == "eshop":
+    _render_eshop()
 else:
     _render_landing()
