@@ -101,6 +101,8 @@ def _parse_search_results_json(data: Dict[str, Any], query: str, barcode_mode: b
 
         reviews = sku.get("reviews_count", 0)
 
+        image_url = str(sku.get("image_url", "") or "")
+
         if score > best_score:
             best_score = score
             best_result = SkroutzResult(
@@ -115,6 +117,7 @@ def _parse_search_results_json(data: Dict[str, Any], query: str, barcode_mode: b
                 match_confidence=score,
                 search_query=query,
                 skroutz_id=sku.get("id"),
+                image_url=image_url,
             )
 
         if barcode_mode:
@@ -230,19 +233,26 @@ class SkroutzScraper:
                 data = resp.json()
                 if "redirectUrl" in data:
                     redirect_url = data["redirectUrl"]
+                    if not redirect_url.startswith("http"):
+                        redirect_url = _BASE_URL + redirect_url
                     if ".html" in redirect_url:
                         json_redirect_url = redirect_url.replace(".html", ".json")
-                        if not json_redirect_url.startswith("http"):
-                            json_redirect_url = _BASE_URL + json_redirect_url
-                        try:
-                            logger.info("→ GET %s (redirect follow)", json_redirect_url)
-                            resp2 = await client.get(json_redirect_url, headers=_HEADERS, timeout=timeout)
-                            logger.info("← HTTP %d %s", resp2.status_code, resp2.url)
-                            if resp2.status_code == 200:
-                                return resp2.json()
-                        except Exception as e:
-                            logger.error("HTTP error following redirect %s: %s", json_redirect_url, e)
-                return data
+                    else:
+                        parts = redirect_url.split("?", 1)
+                        json_redirect_url = parts[0].rstrip("/") + ".json"
+                        if len(parts) > 1:
+                            json_redirect_url += "?" + parts[1]
+                    try:
+                        logger.info("→ GET %s (redirect follow)", json_redirect_url)
+                        resp2 = await client.get(json_redirect_url, headers=_HEADERS, timeout=timeout)
+                        logger.info("← HTTP %d %s", resp2.status_code, resp2.url)
+                        if resp2.status_code == 200:
+                            redirect_data = resp2.json()
+                            if redirect_data.get("skus"):
+                                return redirect_data
+                    except Exception as e:
+                        logger.warning("Redirect follow failed for %s: %s", json_redirect_url, e)
+                    return None
 
             if resp.status_code in (429, 503):
                 retry_after = resp.headers.get("Retry-After", "")
@@ -374,7 +384,12 @@ class SkroutzScraper:
             self.on_status(f"Error scraping {product.name[:40]}: {exc}")
             return SkroutzResult(found=False, search_query=product.name)
 
-    async def bulk_search_async(self, products: list[ProductRecord], concurrency: int = 5) -> dict[str, SkroutzResult]:
+    async def bulk_search_async(
+        self,
+        products: list[ProductRecord],
+        concurrency: int = 5,
+        on_item_done=None,
+    ) -> dict[str, SkroutzResult]:
         results = {}
         sem = asyncio.Semaphore(concurrency)
         self._tasks = []
@@ -385,7 +400,10 @@ class SkroutzScraper:
             async def process_product(product: ProductRecord):
                 async with sem:
                     res = await self.search_async(product, client)
-                    results[product.barcode or product.name] = res
+                    key = product.barcode or product.name
+                    results[key] = res
+                    if on_item_done is not None:
+                        on_item_done(key, res)
 
             for p in products:
                 task = asyncio.create_task(process_product(p))

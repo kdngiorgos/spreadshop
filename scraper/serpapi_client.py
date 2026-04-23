@@ -270,7 +270,10 @@ class SerpApiScraper:
     # ------------------------------------------------------------------
 
     async def bulk_search_async(
-        self, products: list[ProductRecord], concurrency: int = 5
+        self,
+        products: list[ProductRecord],
+        concurrency: int = 5,
+        on_item_done=None,
     ) -> dict[str, SkroutzResult]:
         results: dict[str, SkroutzResult] = {}
         sem = asyncio.Semaphore(concurrency)
@@ -280,7 +283,10 @@ class SerpApiScraper:
             async def process(product: ProductRecord):
                 async with sem:
                     res = await self.search_async(product, client)
-                    results[product.barcode or product.name] = res
+                    key = product.barcode or product.name
+                    results[key] = res
+                    if on_item_done is not None:
+                        on_item_done(key, res)
 
             for p in products:
                 task = asyncio.create_task(process(p))

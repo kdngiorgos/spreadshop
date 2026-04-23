@@ -29,6 +29,70 @@ from config import (
 logger = logging.getLogger(__name__)
 
 
+async def _supplement_images_async(
+    products_to_supplement: list[tuple[str, "ProductRecord"]],
+    results: "dict[str, SkroutzResult]",
+    cache: "ScrapeCache",
+    concurrency: int,
+    on_status: "Callable[[str], None]",
+) -> None:
+    """Fetch image_url from Skroutz for each found-but-imageless result. Updates in-place."""
+    from curl_cffi.requests import AsyncSession
+    from scraper.skroutz import _BASE_URL, _HEADERS
+    from config import SCRAPER_PAGE_TIMEOUT_MS
+
+    sem = asyncio.Semaphore(concurrency)
+    timeout = SCRAPER_PAGE_TIMEOUT_MS / 1000.0
+
+    async def fetch_image(key: str, product: "ProductRecord") -> None:
+        async with sem:
+            try:
+                async with AsyncSession(impersonate="chrome124") as client:
+                    resp = await client.get(
+                        "https://www.skroutz.gr/search.json",
+                        params={"keyphrase": product.name},
+                        headers=_HEADERS,
+                        timeout=timeout,
+                    )
+                    if resp.status_code != 200:
+                        return
+                    data = resp.json()
+
+                    if "redirectUrl" in data:
+                        rurl = data["redirectUrl"]
+                        if not rurl.startswith("http"):
+                            rurl = _BASE_URL + rurl
+                        if ".html" in rurl:
+                            jurl = rurl.replace(".html", ".json")
+                        else:
+                            parts = rurl.split("?", 1)
+                            jurl = parts[0].rstrip("/") + ".json"
+                            if len(parts) > 1:
+                                jurl += "?" + parts[1]
+                        try:
+                            r2 = await client.get(jurl, headers=_HEADERS, timeout=timeout)
+                            if r2.status_code == 200:
+                                data = r2.json()
+                        except Exception:
+                            return
+
+                    skus = data.get("skus", [])
+                    if not skus:
+                        return
+                    image_url = str(skus[0].get("image_url", "") or "")
+                    if image_url:
+                        results[key].image_url = image_url
+                        cache.put(product.barcode, product.name, results[key])
+                        on_status(f"[image] {product.name[:40]}")
+            except Exception:
+                pass  # image supplement is best-effort
+
+    await asyncio.gather(
+        *[fetch_image(key, product) for key, product in products_to_supplement],
+        return_exceptions=True,
+    )
+
+
 def run_scrape(
     products: list[ProductRecord],
     api_key: str = SERPAPI_KEY,
@@ -40,6 +104,7 @@ def run_scrape(
     on_status: Callable[[str], None] = print,
     on_progress: Callable[[int, int], None] = lambda done, total: None,
     on_result: Callable[[str, SkroutzResult], None] = lambda key, r: None,
+    on_cache_hit: Callable[[str, SkroutzResult], None] = lambda key, r: None,
     on_scraper_ready: Callable = lambda s: None,
     stop_event: Optional[threading.Event] = None,
 ) -> dict[str, SkroutzResult]:
@@ -96,7 +161,7 @@ def run_scrape(
         if cached is not None:
             key = p.barcode if p.barcode else p.name[:60].lower()
             results[key] = cached
-            on_result(key, cached)
+            on_cache_hit(key, cached)
             done += 1
             on_progress(done, total)
             on_status(f"[cache] {p.name[:40]}")
@@ -116,25 +181,59 @@ def run_scrape(
 
     on_status(f"Scraping {len(to_scrape)} products (concurrency={concurrency})…")
 
-    # Phase 2: live scrape
-    raw = asyncio.run(scraper.bulk_search_async(to_scrape, concurrency=concurrency))
+    # Phase 2: live scrape — build index so per-item callback can resolve keys
+    _product_index: dict[str, ProductRecord] = {
+        (p.barcode or p.name): p for p in to_scrape
+    }
+    _done_box = [done]  # mutable closure counter
 
+    def _on_item_done(raw_key: str, result: SkroutzResult) -> None:
+        if stop_event.is_set():
+            return
+        p = _product_index.get(raw_key)
+        if p is None:
+            return
+        key = p.barcode if p.barcode else p.name[:60].lower()
+        results[key] = result
+        on_result(key, result)
+        _done_box[0] += 1
+        on_progress(_done_box[0], total)
+
+    raw = asyncio.run(
+        scraper.bulk_search_async(
+            to_scrape, concurrency=concurrency, on_item_done=_on_item_done,
+        )
+    )
+    done = _done_box[0]
+
+    # Write cache and handle stop-event logging (progress already fired per-item)
     for p in to_scrape:
         if stop_event.is_set():
             on_status("Scraping stopped early.")
             break
-
         res_key = p.barcode or p.name
-        key = p.barcode if p.barcode else p.name[:60].lower()
         result = raw.get(res_key) or SkroutzResult(found=False, search_query=p.name)
-
-        results[key] = result
-        on_result(key, result)
         cache.put(p.barcode, p.name, result)
 
-        done += 1
-        on_progress(done, total)
-
     scraper.stop()
+
+    # Phase 3: Supplement images via Skroutz (only when SerpAPI was primary)
+    if source == "serpapi" and not stop_event.is_set():
+        to_image = [
+            (p.barcode if p.barcode else p.name[:60].lower(), p)
+            for p in products
+            if results.get(
+                p.barcode if p.barcode else p.name[:60].lower(),
+                SkroutzResult(found=False),
+            ).found
+            and not results.get(
+                p.barcode if p.barcode else p.name[:60].lower(),
+                SkroutzResult(found=False),
+            ).image_url
+        ]
+        if to_image:
+            on_status(f"Fetching images from Skroutz for {len(to_image)} products…")
+            asyncio.run(_supplement_images_async(to_image, results, cache, concurrency, on_status))
+
     on_status(f"Done. {sum(1 for r in results.values() if r.found)}/{len(results)} found.")
     return results

@@ -765,18 +765,25 @@ def _render_fetch() -> None:
             _SB.results    = {}
             _SB.analyses_ready = False
 
+            def _on_cache_hit(key, r):
+                _SB.results[key] = r
+                _SB.counts["cached"] += 1
+
+            def _on_result(key, r):
+                _SB.results[key] = r
+                _SB.counts["found" if r.found else "not_found"] += 1
+
             try:
-                results = run_scrape(
+                run_scrape(
                     products, api_key=api_key, delay=delay,
                     max_live_requests=max_live_requests or 0,
                     on_status=lambda msg: _SB.log.append(msg),
                     on_progress=lambda done, total: setattr(_SB, "progress", done),
-                    on_result=lambda key, r: _SB.results.update({key: r}),
+                    on_result=_on_result,
+                    on_cache_hit=_on_cache_hit,
                     on_scraper_ready=lambda s: setattr(_SB, "scraper", s),
                     stop_event=stop_evt,
                 )
-                for r in results.values():
-                    _SB.counts["found" if r.found else "not_found"] += 1
             except Exception as exc:
                 import traceback
                 traceback.print_exc()
