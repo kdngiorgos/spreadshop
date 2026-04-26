@@ -74,6 +74,11 @@ FONT_OPTIONS: dict[str, dict[str, str]] = {
         "import":  "Inter:wght@400;500;600;700",
         "family":  "'Inter', system-ui, sans-serif",
     },
+    "hellenic": {
+        "label":   "Hellenic (DM Serif Display + Manrope)",
+        "import":  "DM+Serif+Display&family=Manrope:wght@400;500;600;700;800",
+        "family":  "'Manrope', 'Noto Sans', system-ui, sans-serif",
+    },
 }
 
 

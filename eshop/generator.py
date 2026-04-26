@@ -127,17 +127,23 @@ def generate_eshop(
         cat = (p.category or "Γενικά").strip() or "Γενικά"
         slug = _slugify(p.name, fallback=str(p.barcode or p.code or ""))
         products.append({
-            "id":         p.barcode or p.code or slug,
-            "name":       p.name,
-            "category":   cat,
-            "price":      s.lowest_price if s.found and s.lowest_price else p.retail_price,
-            "cost":       p.wholesale_price,
-            "margin_pct": a.margin_pct if s.found else 0.0,
-            "skroutz_url": s.product_url if s.found and s.product_url else "",
-            "signal":     a.recommendation,
-            "slug":       slug,
-            "bg_color":   category_tint(cat),
-            "image_url":  s.image_url if s.found and s.image_url else "",
+            "id":           p.barcode or p.code or slug,
+            "name":         p.name,
+            "category":     cat,
+            "price":        s.lowest_price if s.found and s.lowest_price else p.retail_price,
+            "cost":         p.wholesale_price,
+            "retail_price": p.retail_price,
+            "margin_pct":   a.margin_pct if s.found else 0.0,
+            "skroutz_url":  s.product_url if s.found and s.product_url else "",
+            "signal":       a.recommendation,
+            "slug":         slug,
+            "bg_color":     category_tint(cat),
+            "image_url":    s.image_url if s.found and s.image_url else "",
+            # Skroutz signals — used by T3 template; T1/T2 ignore these
+            "rating":       s.rating if s.found else 0.0,
+            "review_count": s.review_count if s.found else 0,
+            "shop_count":   s.shop_count if s.found else 0,
+            "barcode":      p.barcode or "",
         })
 
     products = _unique_slugs(products)

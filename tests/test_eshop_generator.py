@@ -144,3 +144,71 @@ class TestGenerateEshop:
                 [_analysis()], tmp_path / tmpl, default_site_config(), template=tmpl,
             )
             assert (out / "index.html").exists()
+
+
+# ---------------------------------------------------------------------------
+# T3 — Skroutz signals in product dict + honest review rendering
+# ---------------------------------------------------------------------------
+
+def _analysis_with_reviews(review_count=0, rating=0.0, shop_count=3) -> ProductAnalysis:
+    p = ProductRecord(
+        source="test", code="C1", name="Omega 3 1000mg",
+        wholesale_price=8.0, retail_price=22.0,
+        barcode="EAN999", category="Ω-Λιπαρά Οξέα",
+    )
+    s = SkroutzResult(
+        found=True, product_name="Omega 3 1000mg",
+        product_url="https://skroutz.gr/x",
+        lowest_price=14.0, highest_price=18.0,
+        shop_count=shop_count, rating=rating,
+        review_count=review_count, match_confidence=0.9,
+        search_query="Omega 3",
+    )
+    return ProductAnalysis(p, s)
+
+
+class TestT3Signals:
+    def test_product_dict_carries_skroutz_signals(self, tmp_path):
+        out = generate_eshop(
+            [_analysis_with_reviews(review_count=23, rating=4.2, shop_count=7)],
+            tmp_path / "site", default_site_config(), template="t3",
+        )
+        import json
+        meta = json.loads((out / "site_config.json").read_text(encoding="utf-8"))
+        assert meta["template"] == "t3"
+        # Verify the product dict fields reach the rendered HTML (proxy: they appear
+        # in the product page since they're rendered by the template).
+        product_pages = list((out / "product").glob("*.html"))
+        assert len(product_pages) == 1
+        html = product_pages[0].read_text(encoding="utf-8")
+        assert "23" in html        # review_count
+        assert "4.2" in html       # rating
+        assert "7" in html         # shop_count
+        assert "EAN999" in html    # barcode
+
+    def test_t3_no_fake_reviews(self, tmp_path):
+        out = generate_eshop(
+            [_analysis_with_reviews(review_count=0, rating=0.0)],
+            tmp_path / "site", default_site_config(), template="t3",
+        )
+        index_html = (out / "index.html").read_text(encoding="utf-8")
+        product_html = list((out / "product").glob("*.html"))[0].read_text(encoding="utf-8")
+        for html in (index_html, product_html):
+            # Confirm the old fake-data patterns are completely absent
+            assert "range(" not in html
+            assert "| random" not in html
+            # When review_count == 0, no review row should appear
+            assert "κριτικές" not in html  # "κριτικές"
+
+    def test_t3_real_review_row_present_when_review_count_positive(self, tmp_path):
+        out = generate_eshop(
+            [_analysis_with_reviews(review_count=42, rating=4.7)],
+            tmp_path / "site", default_site_config(), template="t3",
+        )
+        index_html = (out / "index.html").read_text(encoding="utf-8")
+        product_html = list((out / "product").glob("*.html"))[0].read_text(encoding="utf-8")
+        # "κριτικές" should appear in both pages when review_count > 0
+        assert "κριτικές" in index_html
+        assert "κριτικές" in product_html
+        assert "42" in index_html
+        assert "4.7" in product_html
