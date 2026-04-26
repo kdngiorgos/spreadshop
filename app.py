@@ -712,26 +712,49 @@ def _render_fetch() -> None:
             """, unsafe_allow_html=True)
             return
 
-        _n_sup = len({p.source for p in products_state})
+        all_suppliers = sorted({p.source for p in products_state})
+
+        # Drop stale filter entries when the catalog changes between runs
+        if "scrape_supplier_filter" in st.session_state:
+            stale = set(st.session_state["scrape_supplier_filter"]) - set(all_suppliers)
+            if stale:
+                del st.session_state["scrape_supplier_filter"]
+
+        running = _SB.running
+
+        if len(all_suppliers) >= 2 and not running:
+            selected = st.multiselect(
+                "Suppliers to scrape",
+                options=all_suppliers,
+                default=st.session_state.get("scrape_supplier_filter") or all_suppliers,
+                key="scrape_supplier_filter",
+                help="Limit this scrape to selected suppliers. Default: all.",
+            )
+        else:
+            selected = all_suppliers
+
+        products_filtered = [p for p in products_state if p.source in set(selected)]
+
+        if not products_filtered and products_state:
+            st.caption("No suppliers selected — pick at least one to fetch prices.")
+
         cache = ScrapeCache()
-        cached_count  = sum(1 for p in products_state if cache.has(p.barcode, p.name))
-        pending_count = len(products_state) - cached_count
+        cached_count  = sum(1 for p in products_filtered if cache.has(p.barcode, p.name))
+        pending_count = len(products_filtered) - cached_count
 
         st.markdown(
             f'<div class="step-sub"><strong style="color:var(--text-primary)">'
-            f'{len(products_state)} products</strong> staged from {_n_sup} supplier(s). '
+            f'{len(products_filtered)} products</strong> staged from {len(selected)} supplier(s). '
             f'Ready to match against live Skroutz.gr market data.</div>',
             unsafe_allow_html=True,
         )
 
         c1, c2, c3 = st.columns(3)
-        c1.metric("Total Products",  len(products_state))
+        c1.metric("Total Products",  len(products_filtered))
         c2.metric("Prices Cached",   cached_count)
         c3.metric("Need Live Fetch", pending_count)
 
         st.markdown("<br>", unsafe_allow_html=True)
-
-        running = _SB.running
 
         with st.expander("Request Settings", expanded=not running):
             delay   = st.slider("Delay between requests (s)", 0.0, 5.0, float(SCRAPER_DEFAULT_DELAY), step=0.1)
@@ -804,7 +827,7 @@ def _render_fetch() -> None:
                 _SB.running = True
                 t = threading.Thread(
                     target=_scrape_thread,
-                    args=(products_state, delay, headless,
+                    args=(products_filtered, delay, headless,
                           st.session_state.get("serpapi_key", SERPAPI_KEY), max_live),
                     daemon=True,
                 )
@@ -814,13 +837,13 @@ def _render_fetch() -> None:
             if col_btn2.button("Use Saved Prices", use_container_width=True,
                                disabled=cached_count == 0):
                 results = {}
-                for p in products_state:
+                for p in products_filtered:
                     r = cache.get(p.barcode, p.name)
                     if r:
                         key = p.barcode if p.barcode else p.name[:60].lower()
                         results[key] = r
                 st.session_state["skroutz_results"] = results
-                st.session_state["analyses"]        = analyze(products_state, results)
+                st.session_state["analyses"]        = analyze(products_filtered, results)
                 st.session_state["last_scraped_at"] = datetime.datetime.now()
                 _go("results")
 
