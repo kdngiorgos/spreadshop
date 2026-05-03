@@ -212,3 +212,86 @@ class TestT3Signals:
         assert "κριτικές" in product_html
         assert "42" in index_html
         assert "4.7" in product_html
+
+
+# ---------------------------------------------------------------------------
+# T1 — Editorial redesign regressions
+# ---------------------------------------------------------------------------
+
+def _t1_analysis(name="Test Product", barcode="B001", category="Vitamins",
+                 wholesale=5.0, retail=14.99, lowest=11.0,
+                 shop_count=0, rating=0.0, review_count=0) -> ProductAnalysis:
+    p = ProductRecord(source="test", code="X", name=name,
+                      wholesale_price=wholesale, retail_price=retail,
+                      barcode=barcode, category=category)
+    s = SkroutzResult(
+        found=(shop_count > 0), product_name=name,
+        product_url="https://skroutz.gr/x",
+        lowest_price=lowest, highest_price=lowest * 1.1,
+        shop_count=shop_count, rating=rating, review_count=review_count,
+        match_confidence=0.9, search_query=name,
+    )
+    return ProductAnalysis(p, s)
+
+
+class TestT1Editorial:
+    def test_no_gradient_hero_or_metric_pills(self, tmp_path):
+        """T1 must not have the old gradient-hero or metric-pill pattern."""
+        out = generate_eshop(
+            [_t1_analysis() for _ in range(6)],
+            tmp_path / "site", default_site_config(), template="t1",
+        )
+        html = (out / "index.html").read_text(encoding="utf-8")
+        assert "linear-gradient(135deg" not in html
+        # The old metric pills rendered this string:
+        assert "Κατηγορίες" not in html or "bg-opacity" not in html
+
+    def test_uses_editorial_typography(self, tmp_path):
+        """T1 must load Fraunces and Inter Tight from Google Fonts."""
+        out = generate_eshop(
+            [_t1_analysis()], tmp_path / "site", default_site_config(), template="t1",
+        )
+        html = (out / "index.html").read_text(encoding="utf-8")
+        assert "Fraunces" in html
+        assert "Inter+Tight" in html or "Inter Tight" in html
+
+    def test_card_feature_class_on_every_fifth_card(self, tmp_path):
+        """Every 5th card (index 0, 5, 10) must carry class card-feature."""
+        analyses = [_t1_analysis(name=f"Product {i}", barcode=f"B{i:03d}") for i in range(12)]
+        out = generate_eshop(analyses, tmp_path / "site", default_site_config(), template="t1")
+        html = (out / "index.html").read_text(encoding="utf-8")
+        # card-feature in a class attribute (not CSS selectors) → 3 occurrences for 12 products
+        assert html.count('card-feature"') == 3
+
+    def test_skroutz_signals_shown_when_present(self, tmp_path):
+        """T1 product page shows review row and shop_count only when data present."""
+        with_data = _t1_analysis(shop_count=9, rating=4.3, review_count=55)
+        no_data   = _t1_analysis(name="No Signal", barcode="B999")
+        out = generate_eshop([with_data, no_data], tmp_path / "site",
+                              default_site_config(), template="t1")
+        for html_path in (out / "product").glob("*.html"):
+            html = html_path.read_text(encoding="utf-8")
+            if "no-signal" in html_path.name:
+                assert "καταστήματα" not in html
+                assert "κριτικές" not in html
+            else:
+                assert "9" in html
+                assert "κριτικές" in html
+                assert "55" in html
+
+
+# ---------------------------------------------------------------------------
+# T2 — JS hooks regression (class name fix)
+# ---------------------------------------------------------------------------
+
+class TestT2JSHooks:
+    def test_uses_canonical_class_names(self, tmp_path):
+        """T2 must use .product-card and .filter-pill (not the old -elevate/-tab variants)."""
+        out = generate_eshop(
+            [_t1_analysis()], tmp_path / "site", default_site_config(), template="t2",
+        )
+        html = (out / "index.html").read_text(encoding="utf-8")
+        assert "product-card-elevate" not in html
+        assert "filter-pill-tab" not in html
+        assert 'class="product-card"' in html
+        assert "filter-pill" in html

@@ -6,131 +6,165 @@
   <title>{% block title %}{{ site.name }}{% endblock %}</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family={{ site.font_import }}&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,400&family=Inter+Tight:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ static_root }}/style.css">
   <style>
-    :root { --accent: {{ site.accent_color }}; --accent-dark: {{ site.accent_dark }}; }
-    body { font-family: {{ site.font_family }}; }
+    :root {
+      --accent:       {{ site.accent_color }};
+      --accent-dark:  {{ site.accent_dark }};
+      --surface:      #FCFCFC;
+      --ink:          #0F1014;
+      --ink-muted:    #71717A;
+      --border:       #E4E4E7;
+      --font-display: 'Fraunces', Georgia, serif;
+      --font-body:    'Inter Tight', system-ui, sans-serif;
+    }
+    *, *::before, *::after { box-sizing: border-box; }
+    body {
+      font-family: var(--font-body);
+      background: var(--surface);
+      color: var(--ink);
+      -webkit-font-smoothing: antialiased;
+    }
+    a { text-decoration: none; color: inherit; }
+    .t1-numeral {
+      font-family: var(--font-display);
+      font-feature-settings: "tnum";
+    }
   </style>
   {% block head %}{% endblock %}
 </head>
-<body class="bg-gray-50 text-gray-900 antialiased">
+<body>
 
-  <!-- ── HEADER ─────────────────────────────────────────────────── -->
-  <header class="sticky top-0 bg-white border-b border-gray-100 shadow-sm z-40">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="flex items-center h-16 gap-4">
+  <!-- ── UTILITY BAR ──────────────────────────────────────────────── -->
+  <div class="hidden sm:block text-xs py-1.5"
+       style="background: var(--ink); color: rgba(255,255,255,0.45);">
+    <div class="max-w-7xl mx-auto px-6 flex items-center justify-between">
+      <span style="letter-spacing: 0.06em; font-size: 0.65rem; text-transform: uppercase;">{{ site.name }}</span>
+      <span>Δωρεάν αποστολή &gt; 50€ &thinsp;&middot;&thinsp; Επιστροφές 14 ημ. &thinsp;&middot;&thinsp; SSL</span>
+    </div>
+  </div>
 
-        <!-- Logo / Store name -->
-        <a href="{{ store_root }}" class="flex-shrink-0 flex items-center gap-2">
+  <!-- ── HEADER ────────────────────────────────────────────────────── -->
+  <header class="sticky top-0 z-40 bg-white" style="border-bottom: 1px solid var(--border);">
+    <div class="max-w-7xl mx-auto px-6">
+      <div class="flex items-center h-14 gap-6">
+
+        <!-- Store name / logo -->
+        <a href="{{ store_root }}" class="flex-shrink-0">
           {% if site.logo_url %}
-          <img src="{{ static_root }}/{{ site.logo_url }}" alt="{{ site.name }}" class="h-9 w-auto object-contain">
+          <img src="{{ static_root }}/{{ site.logo_url }}" alt="{{ site.name }}"
+               class="h-8 w-auto object-contain">
           {% else %}
-          <div class="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold text-sm"
-               style="background: var(--accent)">
-            {{ site.name[0] | upper }}
-          </div>
-          <span class="text-lg font-bold tracking-tight hidden sm:block" style="color: var(--accent)">
+          <span class="t1-numeral" style="font-size: 1.1rem; font-weight: 600; color: var(--ink); letter-spacing: -0.02em;">
             {{ site.name }}
           </span>
           {% endif %}
         </a>
 
         <!-- Search -->
-        <div class="flex-1 max-w-lg mx-auto">
+        <div class="flex-1 max-w-md">
           <div class="relative">
-            <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none"
-                 fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 pointer-events-none"
+                 fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                 style="color: var(--ink-muted);">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                     d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
             </svg>
-            <input id="search-input" type="text" placeholder="Αναζήτηση προϊόντων..."
-              class="w-full pl-9 pr-4 py-2 rounded-full border border-gray-200 bg-gray-50 text-sm
-                     focus:outline-none focus:ring-2 focus:ring-offset-0 transition-all"
-              style="--tw-ring-color: var(--accent)20; focus:border-color: var(--accent)">
+            <input id="search-input" type="text" placeholder="Αναζήτηση..."
+              class="w-full pl-9 pr-4 py-2 text-sm focus:outline-none bg-white"
+              style="border: 1px solid var(--border); border-radius: 4px; color: var(--ink);">
           </div>
         </div>
 
         <!-- Cart -->
-        <button id="cart-btn"
-          class="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white
-                 transition-all hover:opacity-90 active:scale-95 flex-shrink-0"
-          style="background: var(--accent)" onclick="toggleCart()">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+        <button id="cart-btn" onclick="toggleCart()"
+          class="flex-shrink-0 flex items-center gap-2 text-sm font-medium"
+          style="color: var(--ink);">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
                   d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>
           </svg>
           <span class="hidden sm:inline">Καλάθι</span>
           <span id="cart-count"
-            class="inline-flex items-center justify-center w-5 h-5 rounded-full text-xs font-bold"
-            style="background: white; color: var(--accent)">0</span>
+            class="text-xs font-bold rounded-full w-5 h-5 inline-flex items-center justify-center"
+            style="background: var(--accent); color: white;">0</span>
         </button>
 
       </div>
     </div>
   </header>
 
-  <!-- ── MAIN ───────────────────────────────────────────────────── -->
+  <!-- ── MAIN ──────────────────────────────────────────────────────── -->
   <main class="min-h-screen">
     {% block content %}{% endblock %}
   </main>
 
-  <!-- ── FOOTER ─────────────────────────────────────────────────── -->
-  <footer class="bg-white border-t border-gray-100 mt-20">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+  <!-- ── FOOTER ────────────────────────────────────────────────────── -->
+  <footer class="bg-white mt-16" style="border-top: 1px solid var(--border);">
+    <div class="max-w-7xl mx-auto px-6 pt-10 pb-8">
+
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-8 mb-8">
+        <div class="col-span-2 sm:col-span-1">
+          <span class="t1-numeral text-sm font-semibold" style="color: var(--ink);">{{ site.name }}</span>
+          <p class="text-xs mt-2 leading-relaxed" style="color: var(--ink-muted);">{{ site.tagline }}</p>
+        </div>
         <div>
-          <div class="flex items-center gap-2 mb-2">
-            <div class="w-7 h-7 rounded-md flex items-center justify-center text-white font-bold text-xs"
-                 style="background: var(--accent)">
-              {{ site.name[0] | upper }}
-            </div>
-            <span class="font-bold text-base" style="color: var(--accent)">{{ site.name }}</span>
-          </div>
-          <p class="text-sm text-gray-400">{{ site.tagline }}</p>
+          <h5 class="text-xs font-bold uppercase tracking-widest mb-3" style="color: var(--ink-muted); font-size: 0.62rem;">Εξυπηρέτηση</h5>
+          <ul class="space-y-2 text-xs" style="color: var(--ink-muted);">
+            <li><a href="#" class="hover:underline">Παρακολούθηση παραγγελίας</a></li>
+            <li><a href="#" class="hover:underline">Επιστροφές &amp; αλλαγές</a></li>
+            <li><a href="#" class="hover:underline">Συχνές ερωτήσεις</a></li>
+          </ul>
         </div>
-        <div class="flex flex-wrap gap-x-6 gap-y-2 text-xs text-gray-400">
-          <span class="flex items-center gap-1">
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
-            </svg>
-            Ασφαλείς πληρωμές
-          </span>
-          <span class="flex items-center gap-1">
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
-            </svg>
-            Γρήγορη αποστολή
-          </span>
-          <span class="flex items-center gap-1">
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
-            </svg>
-            Υποστήριξη πελατών
-          </span>
+        <div>
+          <h5 class="text-xs font-bold uppercase tracking-widest mb-3" style="color: var(--ink-muted); font-size: 0.62rem;">Αποστολές</h5>
+          <ul class="space-y-2 text-xs" style="color: var(--ink-muted);">
+            <li><a href="#" class="hover:underline">Τρόποι αποστολής</a></li>
+            <li><a href="#" class="hover:underline">Χρόνοι παράδοσης</a></li>
+            <li><a href="#" class="hover:underline">Αντικαταβολή</a></li>
+          </ul>
+        </div>
+        <div>
+          <h5 class="text-xs font-bold uppercase tracking-widest mb-3" style="color: var(--ink-muted); font-size: 0.62rem;">Εταιρεία</h5>
+          <ul class="space-y-2 text-xs" style="color: var(--ink-muted);">
+            <li><a href="#" class="hover:underline">Σχετικά με εμάς</a></li>
+            <li><a href="#" class="hover:underline">Επικοινωνία</a></li>
+            <li><a href="#" class="hover:underline">Όροι χρήσης</a></li>
+          </ul>
         </div>
       </div>
-      <div class="mt-8 pt-6 border-t border-gray-50 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-gray-300">
-        <span>&copy; {{ site.name }} {{ year }}. Όλα τα δικαιώματα διατηρούνται.</span>
-        <span>{{ product_count }} προϊόντα · {{ category_count }} κατηγορίες</span>
+
+      <div class="flex flex-wrap items-center justify-between gap-3 pt-5"
+           style="border-top: 1px solid var(--border);">
+        <span class="text-xs" style="color: var(--ink-muted);">
+          &copy; {{ year }} {{ site.name }}. Όλα τα δικαιώματα διατηρούνται.
+        </span>
+        <span class="text-xs font-mono" style="color: var(--ink-muted); letter-spacing: 0.06em;">
+          {{ product_count }} προϊόντα &thinsp;&middot;&thinsp; {{ category_count }} κατηγορίες
+        </span>
       </div>
+
     </div>
   </footer>
 
-  <!-- ── CART TOAST ──────────────────────────────────────────────── -->
+  <!-- ── CART TOAST ────────────────────────────────────────────────── -->
   <div id="cart-toast"
-    class="fixed bottom-5 right-5 bg-white rounded-xl shadow-xl border border-gray-100 p-4
-           text-sm font-medium hidden z-50 flex items-center gap-3 max-w-xs">
-    <div class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
-         style="background: var(--accent)20">
-      <svg class="w-4 h-4" style="color: var(--accent)" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+    class="fixed bottom-5 right-5 bg-white p-4 text-sm hidden z-50 flex items-center gap-3 max-w-xs"
+    style="border: 1px solid var(--border); border-radius: 6px;
+           box-shadow: 0 4px 20px rgba(15,16,20,0.07);">
+    <div class="w-6 h-6 flex items-center justify-center flex-shrink-0"
+         style="background: var(--accent); border-radius: 4px;">
+      <svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
       </svg>
     </div>
-    <span id="cart-toast-text">Προστέθηκε στο καλάθι</span>
+    <div>
+      <div class="font-semibold" style="font-size: 0.72rem; color: var(--ink);">Προστέθηκε στο καλάθι</div>
+      <div id="cart-toast-text" class="truncate max-w-44"
+           style="font-size: 0.7rem; margin-top: 1px; color: var(--ink-muted);"></div>
+    </div>
   </div>
 
   <script src="{{ static_root }}/catalog.js"></script>

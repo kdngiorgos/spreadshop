@@ -2,11 +2,157 @@
 
 {% block title %}{{ product.name }} — {{ site.name }}{% endblock %}
 
+{% block head %}
+<style>
+/* ── T1 PRODUCT PAGE ──────────────────────────────────────── */
+.prod-layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 32px;
+  align-items: start;
+}
+@media (min-width: 768px) {
+  .prod-layout {
+    grid-template-columns: 5fr 7fr;
+    gap: 56px;
+  }
+  .prod-image-col {
+    position: sticky;
+    top: 80px; /* below header 56px + sticky bar */
+  }
+}
+
+.prod-image-box {
+  aspect-ratio: 3/4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+}
+.prod-image-box img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.prod-divider {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 0;
+}
+
+.prod-price {
+  font-family: var(--font-display);
+  font-feature-settings: "tnum";
+  font-size: 2.4rem;
+  color: var(--ink);
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+.qty-ctrl {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.qty-btn {
+  width: 40px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  font-weight: 500;
+  background: white;
+  color: var(--ink);
+  border: none;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+.qty-btn:hover { background: var(--surface); }
+.qty-num {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--ink);
+  border-left: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+}
+
+.btn-add-lg {
+  flex: 1;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: white;
+  background: var(--accent);
+  border: none;
+  cursor: pointer;
+  transition: opacity 0.12s;
+  letter-spacing: 0.01em;
+}
+.btn-add-lg:hover  { opacity: 0.9; }
+.btn-add-lg:active { opacity: 0.78; }
+
+/* Skroutz data panel */
+.skz-panel {
+  border-top: 1px solid var(--border);
+  padding-top: 18px;
+}
+.skz-title {
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+  margin-bottom: 12px;
+}
+.skz-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 0.8rem;
+  color: var(--ink-muted);
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border);
+}
+.skz-row:last-of-type { border-bottom: none; }
+.skz-val {
+  font-family: var(--font-display);
+  font-feature-settings: "tnum";
+  font-size: 0.9rem;
+  color: var(--ink);
+}
+
+.ean-tag {
+  font-family: 'Courier New', monospace;
+  font-size: 0.67rem;
+  letter-spacing: 0.12em;
+  color: var(--ink-muted);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 3px 8px;
+  display: inline-block;
+}
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+<div class="max-w-7xl mx-auto px-6 py-8">
 
   <!-- Breadcrumb -->
-  <nav class="breadcrumb mb-6">
+  <nav class="breadcrumb mb-8">
     <a href="{{ store_root }}">{{ site.name }}</a>
     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
@@ -15,137 +161,140 @@
     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
     </svg>
-    <span class="text-gray-400 truncate max-w-xs">{{ product.name }}</span>
+    <span class="truncate max-w-xs" style="color: var(--ink-muted);">{{ product.name }}</span>
   </nav>
 
-  <!-- Product layout: 2-col on desktop, stacked on mobile -->
-  <div class="grid grid-cols-1 md:grid-cols-2 gap-10 lg:gap-16">
+  <div class="prod-layout">
 
-    <!-- Left: Image -->
-    <div>
-      <div class="product-detail-image" style="background: {{ product.bg_color }}0e;">
+    <!-- LEFT: Image (sticky on desktop) -->
+    <div class="prod-image-col">
+      <div class="prod-image-box" style="background: {{ product.bg_color }}07;">
         {% if product.image_url %}
-        <img src="{{ product.image_url }}" alt="{{ product.name }}"
-             class="max-w-full" style="max-height:280px;object-fit:contain;">
+        <img src="{{ product.image_url }}" alt="{{ product.name }}">
         {% else %}
-        <img src="../static/placeholder.svg" alt="{{ product.name }}"
-             class="max-w-full" style="max-height:280px;object-fit:contain;">
+        <img src="../static/placeholder.svg" alt="{{ product.name }}">
         {% endif %}
       </div>
-      <!-- Thumbnail row -->
-      <div class="flex gap-2 mt-4">
-        <div class="w-16 h-16 rounded-lg border-2 cursor-pointer flex items-center justify-center"
-             style="border-color: var(--accent); background: {{ product.bg_color }}12;">
-          {% if product.image_url %}
-          <img src="{{ product.image_url }}" alt="" class="w-12 h-12 object-contain">
-          {% else %}
-          <img src="../static/placeholder.svg" alt="" class="w-10 h-10 object-contain">
-          {% endif %}
-        </div>
+      {% if product.barcode %}
+      <div class="mt-3 flex items-center gap-2">
+        <span style="font-size: 0.65rem; color: var(--ink-muted);">EAN</span>
+        <span class="ean-tag">{{ product.barcode }}</span>
       </div>
+      {% endif %}
     </div>
 
-    <!-- Right: Details -->
-    <div class="flex flex-col gap-5">
+    <!-- RIGHT: Details -->
+    <div style="display: flex; flex-direction: column; gap: 20px;">
 
       <!-- Category + signal -->
-      <div class="flex items-center gap-2 flex-wrap">
-        <span class="category-badge">{{ product.category }}</span>
+      <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+        <span style="font-size: 0.6rem; font-weight: 700; letter-spacing: 0.1em;
+                     text-transform: uppercase; color: var(--accent);">{{ product.category }}</span>
         {% if product.signal == "strong_buy" %}
-        <span class="signal-badge signal-strong">&#9733; Top Pick</span>
+        <span style="font-size: 0.6rem; font-weight: 700; letter-spacing: 0.06em;
+                     text-transform: uppercase; padding: 2px 8px; border-radius: 2px;
+                     background: var(--accent); color: white;">Top Pick</span>
         {% elif product.signal == "consider" %}
-        <span class="signal-badge signal-consider">&#10003; Καλή Επιλογή</span>
+        <span style="font-size: 0.6rem; font-weight: 700; letter-spacing: 0.06em;
+                     text-transform: uppercase; padding: 2px 8px; border-radius: 2px;
+                     background: #F4F4F5; color: var(--ink-muted);">Αξίζει</span>
         {% endif %}
       </div>
 
-      <!-- Name -->
-      <h1 class="text-2xl sm:text-3xl font-extrabold leading-tight tracking-tight text-gray-900">
+      <!-- Product name -->
+      <h1 class="t1-numeral" style="font-size: clamp(1.5rem, 3.5vw, 2.25rem); font-weight: 700;
+                 line-height: 1.12; letter-spacing: -0.02em; color: var(--ink);">
         {{ product.name }}
       </h1>
 
-      <!-- Price block -->
-      <div class="flex items-baseline gap-3">
-        <span class="text-3xl font-extrabold" style="color: var(--accent)">
-          €{{ "%.2f" | format(product.price) }}
+      <!-- Real reviews -->
+      {% if product.review_count > 0 %}
+      <div style="display: flex; align-items: center; gap: 8px; font-size: 0.82rem;
+                  color: var(--ink-muted);">
+        <span style="color: #ca8a04; font-size: 0.9rem;">★</span>
+        <span style="font-weight: 600; color: var(--ink);">{{ "%.1f" | format(product.rating) }}</span>
+        <span>&middot; {{ product.review_count }} κριτικές</span>
+        {% if product.skroutz_url %}
+        <a href="{{ product.skroutz_url }}" target="_blank" rel="noopener"
+           style="font-size: 0.72rem; color: var(--accent);" class="hover:underline">από Skroutz</a>
+        {% endif %}
+      </div>
+      {% endif %}
+
+      <hr class="prod-divider">
+
+      <!-- Price -->
+      <div style="display: flex; align-items: baseline; gap: 12px;">
+        <span class="prod-price">€{{ "%.2f" | format(product.price) }}</span>
+        {% if product.retail_price > product.price and product.retail_price > 0 %}
+        <span style="font-size: 0.875rem; text-decoration: line-through; color: var(--ink-muted);">
+          €{{ "%.2f" | format(product.retail_price) }}
         </span>
-        <span class="text-sm text-gray-400">συμπ. ΦΠΑ</span>
+        {% endif %}
+        <span style="font-size: 0.72rem; color: var(--ink-muted);">συμπ. ΦΠΑ 24%</span>
       </div>
 
-      <!-- Divider -->
-      <hr class="border-gray-100">
-
-      <!-- Availability -->
-      <div class="flex items-center gap-2 text-sm text-green-600 font-medium">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-        </svg>
-        Άμεσα διαθέσιμο
+      <!-- Stock -->
+      <div style="display: flex; align-items: center; gap: 8px; font-size: 0.82rem;
+                  font-weight: 500; color: #16a34a;">
+        <div style="width: 7px; height: 7px; border-radius: 50%; background: #16a34a;
+                    flex-shrink: 0;"></div>
+        Άμεσα διαθέσιμο — αποστολή εντός 24ω
       </div>
 
-      <!-- Quantity + Add to Cart -->
-      <div class="flex items-center gap-3">
-        <div class="flex items-center border border-gray-200 rounded-lg overflow-hidden">
-          <button onclick="adjustQty(-1)"
-            class="w-10 h-11 flex items-center justify-center text-gray-500 hover:bg-gray-50 transition-colors text-lg font-medium">
-            −
-          </button>
-          <span id="qty-display"
-            class="w-10 h-11 flex items-center justify-center text-sm font-semibold border-x border-gray-200">
-            1
-          </span>
-          <button onclick="adjustQty(1)"
-            class="w-10 h-11 flex items-center justify-center text-gray-500 hover:bg-gray-50 transition-colors text-lg font-medium">
-            +
-          </button>
+      <hr class="prod-divider">
+
+      <!-- Qty + Add to cart -->
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <div class="qty-ctrl">
+          <button class="qty-btn" onclick="adjustQty(-1)">−</button>
+          <div id="qty-display" class="qty-num">1</div>
+          <button class="qty-btn" onclick="adjustQty(1)">+</button>
         </div>
-        <button class="btn-add-cart flex-1"
-          onclick="addToCartQty('{{ product.id }}', {{ product.name | tojson }}, {{ product.price }})">
+        <button class="btn-add-lg"
+                onclick="addToCartQty('{{ product.id }}', {{ product.name | tojson }}, {{ product.price }})">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>
+          </svg>
           Προσθήκη στο καλάθι
         </button>
       </div>
 
-      <!-- Features -->
-      <div class="bg-gray-50 rounded-xl p-4 grid grid-cols-2 gap-3 text-xs text-gray-500">
-        <div class="flex items-center gap-2">
-          <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
-          </svg>
-          <span>Αποστολή 1–3 εργάσιμες</span>
-        </div>
-        <div class="flex items-center gap-2">
-          <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
-          </svg>
-          <span>Ασφαλής πληρωμή</span>
-        </div>
-        <div class="flex items-center gap-2">
-          <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
-          </svg>
-          <span>Κάρτα · Αντικαταβολή</span>
-        </div>
-        <div class="flex items-center gap-2">
-          <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-          </svg>
-          <span>Δωρεάν επιστροφή 14 ημ.</span>
-        </div>
+      <!-- Delivery line (flat text, no icon grid) -->
+      <div style="font-size: 0.75rem; color: var(--ink-muted); line-height: 1.8;">
+        Αποστολή 1–3 εργάσιμες &thinsp;&middot;&thinsp; Κάρτα &amp; Αντικαταβολή
+        &thinsp;&middot;&thinsp; Επιστροφή εντός 14 ημερών
       </div>
 
-      <!-- External reference -->
-      {% if product.skroutz_url %}
-      <a href="{{ product.skroutz_url }}" target="_blank" rel="noopener"
-         class="inline-flex items-center gap-1.5 text-xs text-blue-500 hover:text-blue-600 transition-colors">
-        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
-        </svg>
-        Δες τιμές στο Skroutz
-      </a>
+      <!-- Skroutz comparison panel -->
+      {% if product.shop_count > 0 %}
+      <div class="skz-panel">
+        <div class="skz-title">Δεδομένα αγοράς &middot; Skroutz.gr</div>
+        <div class="skz-row">
+          <span>Διαθέσιμο σε</span>
+          <span class="skz-val">{{ product.shop_count }} καταστήματα</span>
+        </div>
+        {% if product.review_count > 0 %}
+        <div class="skz-row">
+          <span>Βαθμολογία</span>
+          <span class="skz-val">{{ "%.1f" | format(product.rating) }} / 5</span>
+        </div>
+        <div class="skz-row">
+          <span>Κριτικές</span>
+          <span class="skz-val">{{ product.review_count }}</span>
+        </div>
+        {% endif %}
+        {% if product.skroutz_url %}
+        <div style="margin-top: 12px;">
+          <a href="{{ product.skroutz_url }}" target="_blank" rel="noopener"
+             style="font-size: 0.72rem; font-weight: 600; color: var(--accent);"
+             class="hover:underline">
+            Δες όλα τα καταστήματα στο Skroutz.gr →
+          </a>
+        </div>
+        {% endif %}
+      </div>
       {% endif %}
 
     </div>
@@ -154,8 +303,9 @@
   <!-- Back link -->
   <div class="mt-12">
     <a href="{{ store_root }}"
-       class="inline-flex items-center gap-2 text-sm font-medium transition-colors"
-       style="color: var(--accent)">
+       style="display: inline-flex; align-items: center; gap: 6px; font-size: 0.82rem;
+              font-weight: 500; color: var(--ink-muted);"
+       class="hover:underline">
       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
       </svg>

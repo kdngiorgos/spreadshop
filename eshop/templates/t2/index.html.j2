@@ -23,12 +23,12 @@
   <div class="max-w-6xl mx-auto px-6">
     <div class="flex items-end gap-0 overflow-x-auto scrollbar-hide -mb-px">
       <!-- "All" tab -->
-      <button class="filter-pill-tab active" data-category="all">
+      <button class="filter-pill active" data-category="all">
         Όλα
         <span class="tab-count">({{ product_count }})</span>
       </button>
       {% for cat in categories %}
-      <button class="filter-pill-tab" data-category="{{ cat.name }}">
+      <button class="filter-pill" data-category="{{ cat.name }}">
         {{ cat.name }}
         <span class="tab-count">({{ cat.count }})</span>
       </button>
@@ -47,7 +47,7 @@
   <div id="product-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
 
     {% for p in products %}
-    <div class="product-card-elevate"
+    <div class="product-card"
          data-category="{{ p.category }}"
          data-name="{{ p.name | lower }}">
 
@@ -103,7 +103,7 @@
 {% block head %}
 <style>
 /* ── T2: ELEVATE OVERRIDES ──────────────────────────────── */
-.filter-pill-tab {
+.filter-pill {
   padding: 12px 20px 14px;
   font-size: 0.82rem;
   font-weight: 500;
@@ -115,19 +115,19 @@
   background: none;
   border-radius: 0;
 }
-.filter-pill-tab .tab-count {
+.filter-pill .tab-count {
   font-size: 0.7rem;
   opacity: 0.6;
   margin-left: 3px;
 }
-.filter-pill-tab:hover { color: #374151; }
-.filter-pill-tab.active {
+.filter-pill:hover { color: #374151; }
+.filter-pill.active {
   color: var(--accent);
   border-bottom-color: var(--accent);
   font-weight: 600;
 }
 
-.product-card-elevate {
+.product-card {
   display: flex;
   flex-direction: column;
   gap: 0;
@@ -142,7 +142,7 @@
   justify-content: center;
   transition: all 0.2s;
 }
-.product-card-elevate:hover .elevate-image-wrap {
+.product-card:hover .elevate-image-wrap {
   box-shadow: 0 16px 48px -8px rgba(0,0,0,0.12);
 }
 .elevate-image {
@@ -151,7 +151,7 @@
   object-fit: contain;
   transition: transform 0.3s ease;
 }
-.product-card-elevate:hover .elevate-image {
+.product-card:hover .elevate-image {
   transform: scale(1.08);
 }
 .elevate-badge-hot {
