@@ -1,20 +1,36 @@
 # Spreadshop
 
-**Market intelligence for Greek resellers.** Upload a supplier price list, fetch live market prices from Skroutz.gr, and get a ranked list of which products are worth stocking — by margin, competition, and demand.
+**Market intelligence for Greek resellers.** Upload a supplier price list, fetch live market prices from Skroutz.gr, and get a ranked list of which products are worth stocking — by margin, competition, and demand. Then generate a ready-to-preview e-shop in one click.
 
-Built with Streamlit · Python 3.11 · httpx async · SerpAPI / Skroutz JSON
+Built with Streamlit · Python 3.11 · httpx async · SerpAPI / Skroutz JSON · Jinja2
 
 ---
 
 ## Screenshots
 
+### App — Refined Terminal UI
+
 | Landing | Upload |
 |---|---|
-| ![Landing](docs/screenshot_landing.png) | ![Upload](docs/screenshot_upload.png) |
+| ![Landing](screenshots/app_landing.png) | ![Upload](screenshots/app_upload_loaded.png) |
 
-| Fetch Prices | Results |
+| Fetch Prices | Results — Basic |
 |---|---|
-| ![Fetch](docs/screenshot_fetch.png) | ![Results](docs/screenshot_results.png) |
+| ![Fetch](screenshots/app_fetch.png) | ![Results](screenshots/app_results.png) |
+
+| Results — Advanced (charts) | Build E-Shop |
+|---|---|
+| ![Charts](screenshots/app_results_charts2.png) | ![E-Shop](screenshots/app_eshop.png) |
+
+### Generated E-Shop Templates
+
+| T1 — Editorial (index) | T1 — Editorial (product) |
+|---|---|
+| ![T1 Index](screenshots/t1_index_desktop.png) | ![T1 Product](screenshots/t1_product_desktop.png) |
+
+| T2 — Elevate | T3 — Agora Modern |
+|---|---|
+| ![T2](screenshots/t2_index_desktop.png) | ![T3](screenshots/t3_index_desktop.png) |
 
 ---
 
@@ -22,11 +38,11 @@ Built with Streamlit · Python 3.11 · httpx async · SerpAPI / Skroutz JSON
 
 Greek resellers deal with supplier catalogs (XLSX/PDF) containing hundreds of products and wholesale prices. Without knowing what those products sell for on Skroutz.gr — Greece's dominant price-comparison marketplace — it's impossible to know which items are profitable.
 
-Spreadshop solves this in three steps:
+Spreadshop solves this in four steps:
 
 ```
-Upload catalog  →  Fetch live prices  →  See what to stock
-    (XLSX/PDF)        (async, cached)        (margin ranked)
+Upload catalog  →  Fetch live prices  →  See what to stock  →  Generate e-shop
+    (XLSX/PDF)        (async, cached)        (margin ranked)       (3 templates)
 ```
 
 For each product it calculates gross margin, competition level, and an opportunity score. Products are recommended as **Strong Buy**, **Consider**, or **Skip**.
@@ -35,14 +51,15 @@ For each product it calculates gross margin, competition level, and an opportuni
 
 ## Features
 
-- **Guided wizard flow** — Landing page → Upload → Fetch Prices → Results. No tabs to hunt through.
+- **Guided wizard flow** — Landing → Upload → Fetch Prices → Results → Build E-Shop. No tabs to hunt through.
 - **Universal catalog parsing** — Reads supplier XLSX files and PDFs, including garbled-column VioGenesis PDFs with a purpose-built regex decoder.
-- **Fast async scraping** — `httpx.AsyncClient` with configurable concurrency (default 2 workers). No browser required.
-- **Two scraper backends** — Switch between the native Skroutz JSON endpoint (free, fast) and Google Shopping via SerpAPI (more reliable, requires API key).
-- **Smart caching** — Results cached for 24 hours by barcode. Re-running is instant.
+- **Fast async scraping** — `httpx.AsyncClient` with configurable concurrency. No browser required.
+- **Two scraper backends** — Native Skroutz JSON endpoint (free, fast) and Google Shopping via SerpAPI (more reliable, requires API key).
+- **Smart caching** — Results cached 24 hours by barcode. Re-running is instant.
 - **Simple / Advanced Results toggle** — Simple mode shows a clean "What to Stock" table. Advanced mode unlocks investment summary, charts, scatter plot, sidebar filters, and full 15-column analysis table.
+- **E-shop generator** — Produces a static Jinja2 site (3 templates: Editorial, Elevate, Agora Modern) with a local preview server.
 - **XLSX report export** — Multi-sheet report with opportunities, not-found products, and parse errors.
-- **Docker-ready** — Single `docker compose up` command.
+- **Refined Terminal UI** — Flat dark surface, Inter Tight + JetBrains Mono, single emerald accent, tabular numerals on every price and percentage. No gradients, no glow, no decorative backgrounds.
 
 ---
 
@@ -57,31 +74,38 @@ For each product it calculates gross margin, competition level, and an opportuni
                           │
                           ▼
 ┌─────────────────────────────────────────────────────────┐
-│              STEP 1 — Load Your Catalog           ● ○ ○ │
+│           01 Load Catalog                               │
 │  Drop XLSX or PDF. Auto-parsed, summary shown.          │
 │              [ Confirm & Continue → ]                   │
 └─────────────────────────┬───────────────────────────────┘
                           │
                           ▼
 ┌─────────────────────────────────────────────────────────┐
-│           STEP 2 — Fetch Market Prices            ● ● ○ │
-│  207 products staged. Concurrency, delay, cap.          │
+│           02 Fetch Prices                               │
+│  Products staged. Concurrency, delay, cap.              │
 │  [ Fetch Market Prices ]  [ Use Saved Prices ]          │
-│  ████████████░░░░░░░░  42/207  live progress            │
 └─────────────────────────┬───────────────────────────────┘
                           │  auto-navigates when done
                           ▼
 ┌─────────────────────────────────────────────────────────┐
-│               STEP 3 — Your Results               ● ● ● │
+│           03 Your Results                               │
 │  Est. Gross Profit  €3,450.00                           │
 │  12 buy signals · 34.5% avg margin                      │
 │                                                         │
 │  ○ Advanced Analysis  ←── toggle                        │
 │                                                         │
-│  SIMPLE:  What to Stock table (6 columns)               │
-│  ADVANCED: charts, filters, full table, scatter         │
+│  SIMPLE:  Top 5 opportunity cards + What to Stock table │
+│  ADVANCED: invest summary, charts, filters, full table  │
 │                                                         │
-│  [ Download XLSX Report ]                               │
+│  [ Download XLSX Report ]  [ Build E-Shop → ]           │
+└─────────────────────────┬───────────────────────────────┘
+                          │
+                          ▼
+┌─────────────────────────────────────────────────────────┐
+│           04 Build E-Shop                               │
+│  Pick template, configure store, select products.       │
+│  [ Generate & Launch E-Shop ]                           │
+│  ● running · preview at http://localhost:7891           │
 └─────────────────────────────────────────────────────────┘
 ```
 
@@ -89,43 +113,36 @@ For each product it calculates gross margin, competition level, and an opportuni
 
 ## Quick Start
 
-### Docker (recommended)
-
-```bash
-# 1. Clone
-git clone https://github.com/kdngiorgos/spreadshop.git
-cd spreadshop
-
-# 2. Create .env with your SerpAPI key
-echo "SERPAPI_KEY=your_key_here" > .env
-
-# 3. Build and run
-docker compose up -d --build
-
-# 4. Open
-open http://localhost:8080
-```
-
-The cache, reports, and logs directories are volume-mounted so they persist across container restarts.
-
 ### Local (dev)
 
 ```bash
 # Python 3.11+
 pip install -r requirements.txt
 
-# Add SERPAPI_KEY to .env (or skip if using the Skroutz backend)
+# Add SERPAPI_KEY to .env (or skip to use the Skroutz backend)
 echo "SERPAPI_KEY=your_key_here" > .env
 
 streamlit run app.py
 # → http://localhost:8501
 ```
 
+### Docker
+
+```bash
+git clone https://github.com/kdngiorgos/spreadshop.git
+cd spreadshop
+echo "SERPAPI_KEY=your_key_here" > .env
+docker compose up -d --build
+# → http://localhost:8080
+```
+
+The cache, reports, and logs directories are volume-mounted so they persist across container restarts.
+
 ---
 
 ## Configuration
 
-All settings live in `.env` (never committed). Copy this template:
+All settings live in `.env` (never committed):
 
 ```dotenv
 # Required for SerpAPI backend
@@ -136,7 +153,7 @@ SPREADSHOP_SCRAPER=serpapi          # "serpapi" or "skroutz"
 SPREADSHOP_HEADLESS=false           # set true in Docker
 ```
 
-Full list of tuneable constants in `config.py`:
+Tuneable constants in `config.py`:
 
 | Constant | Default | Description |
 |---|---|---|
@@ -207,21 +224,40 @@ GET https://www.skroutz.gr/search.json?keyphrase={product_name}
 
 ### SerpAPI (Google Shopping)
 
-Uses the [SerpAPI](https://serpapi.com) Google Shopping engine with Greek locale:
-
-```
-GET https://serpapi.com/search.json?engine=google_shopping&q={name}&hl=el&gl=gr
-```
-
-1. Returns up to 10 Shopping listings; picks best by fuzzy title match
-2. Counts distinct `.gr` domain sources as Greek market shop count
-3. Falls back to barcode search if name search confidence is below threshold
-4. Exponential backoff on HTTP 429
+Uses the [SerpAPI](https://serpapi.com) Google Shopping engine with Greek locale.
 
 **Pros:** More reliable, avoids Skroutz anti-scraping  
 **Cons:** Requires a paid API key; shop count is a proxy, not exact Skroutz data
 
 Switch backends via `.env`: `SPREADSHOP_SCRAPER=skroutz` or `SPREADSHOP_SCRAPER=serpapi`.
+
+---
+
+## E-Shop Generator
+
+Step 4 produces a fully static HTML/CSS site from the analysis results using Jinja2 templates and launches a local preview server.
+
+### Templates
+
+| ID | Name | Description |
+|---|---|---|
+| `t1` | Editorial | Fraunces serif display + asymmetric grid. Featured card every 5th product. |
+| `t2` | Elevate | Underline-tab category nav, large image cards, clean sans-serif. |
+| `t3` | Agora Modern | Greek typographic rhythm, Skroutz signals (reviews, shops) prominently displayed. |
+
+### Output
+
+```
+eshop_preview_t1/
+├── index.html          # product grid
+├── product/
+│   └── *.html          # one page per product
+├── static/
+│   └── placeholder.svg
+└── site_config.json
+```
+
+The local preview server runs at `http://localhost:7891` (configurable). Stop it from the app UI or by restarting Streamlit.
 
 ---
 
@@ -258,39 +294,12 @@ score         = margin_score + comp_score + demand_score
 
 ---
 
-## CLI — Scrape Without the UI
-
-Test the scraper from the terminal without launching Streamlit:
-
-```bash
-# Scrape first 5 products from all supplier files
-python scripts/scrape_cli.py --limit 5
-
-# Filter by product name
-python scripts/scrape_cli.py --product "ginseng" --limit 1
-
-# Use a specific API key
-python scripts/scrape_cli.py --api-key sk-... --limit 10
-```
-
-Output:
-
-```
-PRODUCT                                        WHOLESALE     MARKET   MARGIN  SHOPS
-══════════════════════════════════════════════════════════════════════════════════
-Bio-Strath Forte 200 tabs                          12.50      28.90    131.2%      6
-Solgar Vitamin D3 5000iu 120 softgels              15.20      31.50    107.2%      9
-...
-```
-
----
-
 ## Project Structure
 
 ```
 spreadshop/
 │
-├── app.py                      # Streamlit UI — wizard flow, 4 screens
+├── app.py                      # Streamlit UI — 4-screen wizard
 │
 ├── parsers/
 │   ├── base.py                 # ProductRecord, SkroutzResult, ParseError · parse_file()
@@ -309,26 +318,33 @@ spreadshop/
 │   ├── compare.py              # Margin %, opportunity score, recommendations
 │   └── export.py               # Multi-sheet XLSX report (openpyxl)
 │
+├── eshop/
+│   ├── generator.py            # Jinja2 static site generator
+│   ├── site_config.py          # SiteConfig dataclass + defaults
+│   ├── server.py               # Local preview server (threading + http.server)
+│   └── templates/
+│       ├── base.html.j2        # Shared base (nav, cart, CSS tokens)
+│       ├── t1/                 # Editorial template (Fraunces + Inter Tight)
+│       ├── t2/                 # Elevate template
+│       └── t3/                 # Agora Modern template
+│
 ├── scripts/
-│   └── scrape_cli.py           # Standalone CLI scraper
+│   └── demo.py                 # Proof-of-concept: all parsers + mock analysis + export
 │
 ├── tests/
-│   ├── conftest.py             # Shared fixtures
-│   ├── test_xlsx_parser.py
-│   ├── test_pdf_biotonics.py
-│   ├── test_pdf_viogenesis.py
-│   ├── test_parse_dispatch.py
-│   └── test_scraper.py
+│   ├── conftest.py
+│   ├── test_runner.py
+│   ├── test_cache.py
+│   ├── test_compare.py
+│   └── test_eshop_generator.py
 │
-├── scrape_buffer.py            # Module-level shared state for background thread
 ├── config.py                   # All tuneable constants + env loading
 ├── logger.py                   # Logging setup
-│
 ├── Dockerfile
 ├── docker-compose.yml
 ├── requirements.txt
 └── .streamlit/
-    └── config.toml             # Dark theme (DM Sans/DM Mono, green accent)
+    └── config.toml             # Dark theme (Inter Tight, #10B981 emerald accent)
 ```
 
 ---
@@ -340,6 +356,14 @@ spreadshop/
 ```bash
 pip install pytest pytest-asyncio
 pytest
+# 143 passed, 1 skipped
+```
+
+### Proof-of-concept run (no browser needed)
+
+```bash
+python scripts/demo.py
+# Parses 207 products, runs analysis with mock data, exports reports/demo_report.xlsx
 ```
 
 ### Linting / type checks
@@ -349,14 +373,6 @@ pip install ruff mypy
 ruff check .
 mypy app.py scraper/ parsers/ analysis/
 ```
-
-### Rebuilding Docker after code changes
-
-```bash
-docker compose build --no-cache && docker compose up -d
-```
-
-Use `--no-cache` to ensure Python source changes aren't served from a stale layer.
 
 ---
 
@@ -370,6 +386,7 @@ Use `--no-cache` to ensure Python source changes aren't served from a stale laye
 | PDF parsing | [pdfplumber](https://github.com/jsvine/pdfplumber) |
 | XLSX I/O | [openpyxl](https://openpyxl.readthedocs.io) |
 | Charts | [Plotly](https://plotly.com/python/) |
+| E-shop templates | [Jinja2](https://jinja.palletsprojects.com) + Tailwind CDN |
 | Containerisation | Docker + Compose |
 
 ---

@@ -37,42 +37,35 @@ st.set_page_config(
 # ---------------------------------------------------------------------------
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=DM+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 
-/* TOKENS */
+/* DESIGN TOKENS */
 :root {
-    --bg:             #080E1C;
-    --surface:        #0D1526;
-    --surface-raised: #112037;
-    --surface-deep:   #060C18;
-    --border:         #1A2B42;
-    --border-subtle:  #121F33;
+    --bg:             #0B0E14;
+    --surface:        #0E1217;
+    --surface-raised: #13181F;
+    --surface-deep:   #080B0F;
+    --border:         #1F242C;
+    --border-subtle:  #191D24;
     --accent:         #10B981;
     --accent-dim:     #052E1C;
     --accent-mid:     #0A7A55;
-    --accent-glow:    #10B98118;
     --accent-text:    #34D399;
     --danger:         #EF4444;
     --danger-dim:     #2D0A0A;
     --warn:           #F59E0B;
     --warn-dim:       #2A1700;
-    --text-primary:   #E2EAF4;
-    --text-secondary: #8BA3BC;
-    --text-muted:     #3D5470;
+    --text-primary:   #E6EDF3;
+    --text-secondary: #7D8590;
+    --text-muted:     #4A5160;
 }
 
 /* BASE */
-html, body, [class*="css"], .stApp {
-    font-family: 'DM Sans', system-ui, -apple-system, sans-serif !important;
+html, body, .stApp {
+    font-family: 'Inter Tight', system-ui, -apple-system, sans-serif !important;
 }
-
 .stApp {
     background-color: var(--bg) !important;
-    background-image:
-        radial-gradient(ellipse 80% 50% at 50% -10%, #10B98114 0%, transparent 55%),
-        radial-gradient(#1A2B4228 1px, transparent 1px) !important;
-    background-size: auto, 24px 24px !important;
-    background-attachment: fixed !important;
 }
 
 /* Hide Streamlit chrome */
@@ -87,7 +80,6 @@ h3 {
     font-weight: 600 !important;
     color: var(--text-primary) !important;
     margin-bottom: 4px !important;
-    font-family: 'DM Sans', sans-serif !important;
 }
 h4 {
     font-size: 0.72rem !important;
@@ -95,10 +87,7 @@ h4 {
     text-transform: uppercase !important;
     letter-spacing: 0.09em !important;
     color: var(--text-secondary) !important;
-    padding-left: 10px !important;
-    border-left: 2px solid var(--accent) !important;
     margin: 24px 0 14px 0 !important;
-    font-family: 'DM Sans', sans-serif !important;
 }
 h5 {
     font-size: 0.7rem !important;
@@ -107,7 +96,6 @@ h5 {
     letter-spacing: 0.08em !important;
     color: var(--text-secondary) !important;
     margin: 20px 0 10px 0 !important;
-    font-family: 'DM Sans', sans-serif !important;
 }
 hr {
     border: none !important;
@@ -119,169 +107,145 @@ hr {
 [data-testid="metric-container"] {
     background: var(--surface);
     border: 1px solid var(--border);
-    border-top: 2px solid #10B98130;
-    border-radius: 8px;
-    padding: 20px 22px;
-    transition: border-color 0.15s;
-}
-[data-testid="metric-container"]:hover {
-    border-color: #2A4060;
-    border-top-color: #10B98160;
+    border-radius: 4px;
+    padding: 18px 22px;
 }
 [data-testid="metric-container"] [data-testid="stMetricValue"] {
-    font-family: 'DM Mono', monospace !important;
-    font-size: 1.8rem !important;
-    color: var(--text-primary);
+    font-family: 'JetBrains Mono', monospace !important;
+    font-feature-settings: "tnum" !important;
+    font-size: 1.6rem !important;
     font-weight: 500;
+    color: var(--text-primary);
+    letter-spacing: -0.01em;
 }
 [data-testid="metric-container"] [data-testid="stMetricLabel"] {
     color: var(--text-secondary);
-    font-size: 0.71rem;
+    font-size: 0.68rem;
     text-transform: uppercase;
-    letter-spacing: 0.07em;
-    font-family: 'DM Sans', sans-serif !important;
+    letter-spacing: 0.08em;
 }
 
-/* PRIMARY BUTTON — make it more prominent */
+/* PRIMARY BUTTON */
 [data-testid="stBaseButton-primary"] {
-    font-size: 0.95rem !important;
+    font-size: 0.9rem !important;
     font-weight: 600 !important;
-    height: 46px !important;
-    border-radius: 8px !important;
+    height: 44px !important;
+    border-radius: 4px !important;
     letter-spacing: 0.01em !important;
-    transition: opacity 0.15s, transform 0.1s !important;
+    transition: opacity 0.12s !important;
 }
 [data-testid="stBaseButton-primary"]:hover {
-    opacity: 0.9 !important;
-    transform: translateY(-1px) !important;
+    opacity: 0.88 !important;
+}
+[data-testid="stBaseButton-primary"]:focus-visible,
+[data-testid="stBaseButton-secondary"]:focus-visible,
+[data-testid="stBaseButton-borderless"]:focus-visible {
+    outline: 2px solid var(--accent) !important;
+    outline-offset: 2px !important;
 }
 
 /* HERO METRIC STRIP */
 .hero-metric-strip {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-left: 3px solid var(--accent);
-    border-radius: 8px;
-    padding: 20px 28px;
-    margin-bottom: 20px;
+    padding: 16px 0 20px 0;
+    margin-bottom: 16px;
 }
 .hm-label {
-    font-size: 0.68rem; font-weight: 600; text-transform: uppercase;
-    letter-spacing: 0.1em; color: var(--text-muted);
-    font-family: 'DM Sans', sans-serif; margin-bottom: 6px;
+    font-size: 0.63rem; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.1em; color: var(--text-muted); margin-bottom: 8px;
 }
 .hm-value {
-    font-size: 2.6rem; font-weight: 500; color: var(--accent-text);
-    font-family: 'DM Mono', monospace; letter-spacing: -0.02em;
-    line-height: 1; margin-bottom: 8px;
+    font-size: 2.8rem; font-weight: 500; color: var(--accent);
+    font-family: 'JetBrains Mono', monospace; letter-spacing: -0.02em;
+    line-height: 1; margin-bottom: 8px; font-feature-settings: "tnum";
 }
-.hm-sub { font-size: 0.78rem; color: var(--text-secondary); font-family: 'DM Sans', sans-serif; }
+.hm-rule { width: 24px; height: 1px; background: var(--border); margin: 10px 0 8px 0; }
+.hm-sub { font-size: 0.78rem; color: var(--text-secondary); }
 
-/* INVEST BOX */
-.invest-box {
-    background: var(--surface); border: 1px solid var(--border);
-    border-left: 3px solid var(--accent); border-radius: 8px;
-    padding: 18px 22px; margin: 4px 0 20px 0;
+/* INVEST ROW */
+.invest-row {
+    font-size: 0.82rem; color: var(--text-secondary);
+    font-family: 'JetBrains Mono', monospace;
+    font-feature-settings: "tnum";
+    padding: 12px 0;
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    margin: 4px 0 20px 0;
 }
-.invest-box-title {
-    font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.09em;
-    color: var(--text-secondary); margin-bottom: 16px; font-weight: 600;
-    font-family: 'DM Sans', sans-serif;
+.invest-row strong { color: var(--text-primary); }
+.invest-row .ir-accent { color: var(--accent-text); font-weight: 600; }
+
+/* STAT STRIP */
+.stat-strip {
+    font-size: 0.8rem; color: var(--text-secondary);
+    font-family: 'JetBrains Mono', monospace;
+    font-feature-settings: "tnum";
+    padding: 10px 0 16px 0;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 16px;
 }
-.invest-main-row { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
-.invest-block { display: flex; flex-direction: column; gap: 3px; }
-.invest-block .ib-label {
-    font-size: 0.63rem; text-transform: uppercase; letter-spacing: 0.08em;
-    color: var(--text-muted); font-family: 'DM Sans', sans-serif;
-}
-.invest-block .ib-value {
-    font-size: 1.3rem; font-weight: 500; color: var(--text-primary);
-    font-family: 'DM Mono', monospace;
-}
-.invest-block .ib-value.green { color: var(--accent-text); }
-.invest-arrow { font-size: 1.2rem; color: var(--text-muted); flex-shrink: 0; }
-.invest-roi {
-    display: inline-block; background: var(--accent-dim); color: var(--accent-text);
-    border: 1px solid var(--accent-mid); border-radius: 6px;
-    padding: 4px 14px; font-size: 1.1rem; font-weight: 500;
-    font-family: 'DM Mono', monospace; margin-left: 4px;
-}
+.stat-strip strong { color: var(--text-primary); }
+.stat-strip .stat-sep { color: var(--border); margin: 0 12px; }
+.stat-strip .stat-accent { color: var(--accent-text); font-weight: 600; }
 
 /* OPP CARDS */
 .opp-card {
     background: var(--surface); border: 1px solid var(--border);
-    border-radius: 8px; padding: 16px 18px; height: 100%;
+    border-radius: 4px; padding: 16px 18px; height: 100%;
 }
-.opp-card.strong-buy {
-    border-left: 3px solid var(--accent);
-    box-shadow: 0 0 20px var(--accent-glow);
-}
+.opp-card.strong-buy { border-left: 2px solid var(--accent); }
 .opp-card-header {
     display: flex; align-items: center; justify-content: space-between;
     margin-bottom: 8px;
 }
 .opp-card-title {
     font-size: 0.83rem; color: var(--text-primary); font-weight: 600;
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    font-family: 'DM Sans', sans-serif; margin-bottom: 2px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 2px;
 }
-.opp-card-sub { font-size: 0.71rem; color: var(--text-muted); margin-top: 3px; font-family: 'DM Sans', sans-serif; }
-.opp-margin-bar { height: 2px; background: var(--border); border-radius: 2px; margin: 8px 0; overflow: hidden; }
-.opp-margin-fill { height: 100%; background: var(--accent); border-radius: 2px; }
+.opp-card-sub { font-size: 0.71rem; color: var(--text-muted); margin-top: 3px; }
+.opp-margin-bar { height: 1px; background: var(--border); margin: 8px 0; overflow: hidden; }
+.opp-margin-fill { height: 100%; background: var(--accent); }
 .opp-card-metrics { display: flex; gap: 16px; margin-top: 10px; }
-.opp-card-metrics .m-label { font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; font-family: 'DM Sans', sans-serif; margin-bottom: 2px; }
-.opp-card-metrics .m-value { font-size: 0.88rem; font-weight: 500; color: var(--text-primary); font-family: 'DM Mono', monospace; }
+.opp-card-metrics .m-label { font-size: 0.63rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 2px; }
+.opp-card-metrics .m-value { font-size: 0.88rem; font-weight: 500; color: var(--text-primary); font-family: 'JetBrains Mono', monospace; font-feature-settings: "tnum"; }
 .opp-card-metrics .m-value.green { color: var(--accent-text); }
 .opp-card-metrics .m-value.amber { color: var(--warn); }
 .opp-card-metrics .m-value.red   { color: var(--danger); }
 
 /* BADGES */
-.badge-strong   { background:var(--accent-dim); color:var(--accent-text); padding:3px 10px; border-radius:4px; font-size:0.71rem; border:1px solid var(--accent-mid); font-weight:600; font-family:'DM Sans',sans-serif; white-space:nowrap; }
-.badge-consider { background:var(--warn-dim);   color:var(--warn);        padding:3px 10px; border-radius:4px; font-size:0.71rem; border:1px solid #7A4E0040; font-weight:600; font-family:'DM Sans',sans-serif; white-space:nowrap; }
-.badge-skip     { background:var(--danger-dim); color:var(--danger);      padding:3px 10px; border-radius:4px; font-size:0.71rem; border:1px solid #7A000040; font-weight:600; font-family:'DM Sans',sans-serif; white-space:nowrap; }
-.badge-nf       { background:var(--surface);    color:var(--text-muted);  padding:3px 10px; border-radius:4px; font-size:0.71rem; border:1px solid var(--border); font-weight:600; font-family:'DM Sans',sans-serif; white-space:nowrap; }
-
-/* SUMMARY BOXES */
-.summary-box {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: 8px; padding: 18px 20px; text-align: center;
-}
-.summary-box .sb-value { font-size: 1.5rem; font-weight: 500; color: var(--text-primary); font-family: 'DM Mono', monospace; }
-.summary-box .sb-value.green { color: var(--accent-text); }
-.summary-box .sb-label { font-size: 0.67rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; margin-top: 6px; font-family: 'DM Sans', sans-serif; }
-.summary-box .sb-sub { font-size: 0.77rem; color: var(--text-secondary); margin-top: 8px; font-family: 'DM Sans', sans-serif; }
+.badge-strong   { background: var(--accent); color: #fff; padding: 2px 8px; border-radius: 2px; font-size: 0.68rem; font-weight: 700; font-family: 'JetBrains Mono', monospace; letter-spacing: 0.05em; text-transform: uppercase; white-space: nowrap; }
+.badge-consider { color: var(--text-secondary); padding: 2px 8px; border-radius: 2px; font-size: 0.68rem; font-weight: 600; border: 1px solid var(--border); white-space: nowrap; }
+.badge-skip     { color: var(--text-muted); padding: 2px 8px; border-radius: 2px; font-size: 0.68rem; font-weight: 600; border: 1px solid var(--border-subtle); white-space: nowrap; }
+.badge-nf       { color: var(--text-muted); padding: 2px 8px; border-radius: 2px; font-size: 0.68rem; font-weight: 600; border: 1px solid var(--border-subtle); white-space: nowrap; }
 
 /* SUPPLIER CARDS */
 .supplier-card {
     background: var(--surface); border: 1px solid var(--border);
-    border-radius: 8px; padding: 12px 18px;
+    border-radius: 4px; padding: 12px 18px;
     display: flex; align-items: center; gap: 14px; margin-bottom: 6px;
 }
-.sc-type { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); background: var(--bg); border: 1px solid var(--border); border-radius: 3px; padding: 2px 7px; flex-shrink: 0; font-family: 'DM Sans', sans-serif; }
-.sc-name { font-size: 0.86rem; color: var(--text-primary); font-weight: 600; font-family: 'DM Sans', sans-serif; }
-.sc-meta { font-size: 0.71rem; color: var(--text-muted); margin-top: 2px; font-family: 'DM Sans', sans-serif; }
-.sc-badge { margin-left: auto; font-size: 0.7rem; padding: 3px 10px; border-radius: 4px; white-space: nowrap; flex-shrink: 0; font-weight: 600; font-family: 'DM Sans', sans-serif; }
+.sc-type { font-size: 0.63rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); background: var(--bg); border: 1px solid var(--border); border-radius: 2px; padding: 2px 7px; flex-shrink: 0; font-family: 'JetBrains Mono', monospace; }
+.sc-name { font-size: 0.86rem; color: var(--text-primary); font-weight: 600; }
+.sc-meta { font-size: 0.71rem; color: var(--text-muted); margin-top: 2px; }
+.sc-badge { margin-left: auto; font-size: 0.68rem; padding: 2px 8px; border-radius: 2px; white-space: nowrap; flex-shrink: 0; font-weight: 700; font-family: 'JetBrains Mono', monospace; text-transform: uppercase; letter-spacing: 0.05em; }
 .sc-badge-ok   { background: var(--accent-dim);  color: var(--accent-text); border: 1px solid var(--accent-mid); }
 .sc-badge-warn { background: var(--warn-dim);     color: var(--warn);        border: 1px solid #7A4E0040; }
 .sc-badge-err  { background: var(--danger-dim);   color: var(--danger);      border: 1px solid #7A000040; }
 
 /* EMPTY STATES */
 .empty-state { padding: 60px 0 40px 0; color: var(--text-muted); }
-.es-title { font-size: 0.88rem; color: var(--text-secondary); font-weight: 600; margin-bottom: 8px; font-family: 'DM Sans', sans-serif; }
-.es-hint  { font-size: 0.8rem; line-height: 1.7; color: var(--text-muted); font-family: 'DM Sans', sans-serif; }
+.es-title { font-size: 0.88rem; color: var(--text-secondary); font-weight: 600; margin-bottom: 8px; }
+.es-hint  { font-size: 0.8rem; line-height: 1.7; color: var(--text-muted); }
 .es-hint strong { color: var(--text-secondary); }
 
 /* SCRAPE LOG */
 .scrape-log {
     background: var(--surface-deep); border: 1px solid var(--border);
-    border-radius: 6px; padding: 12px 14px; font-size: 0.76rem;
+    border-radius: 4px; padding: 12px 14px; font-size: 0.76rem;
     color: var(--text-secondary); max-height: 220px; overflow-y: auto;
-    font-family: 'DM Mono', monospace; line-height: 1.65;
+    font-family: 'JetBrains Mono', monospace; line-height: 1.65;
 }
 
-/* =====================================================================
-   LANDING PAGE
-   ===================================================================== */
+/* LANDING PAGE */
 .landing-hero {
     display: flex; flex-direction: column;
     align-items: center; justify-content: center;
@@ -290,12 +254,10 @@ hr {
     min-height: 64vh;
 }
 .landing-wordmark {
-    font-size: 0.82rem; font-weight: 700; letter-spacing: 0.08em;
+    font-size: 0.72rem; font-weight: 700; letter-spacing: 0.12em;
     text-transform: uppercase; color: var(--text-muted);
-    font-family: 'DM Mono', monospace;
-    margin-bottom: 32px;
-    border: 1px solid var(--border); background: var(--surface);
-    padding: 4px 14px; border-radius: 20px; display: inline-block;
+    font-family: 'JetBrains Mono', monospace;
+    margin-bottom: 36px; display: inline-block;
 }
 .landing-headline {
     font-size: clamp(2.2rem, 4.5vw, 3.2rem);
@@ -303,90 +265,94 @@ hr {
     color: var(--text-primary);
     letter-spacing: -0.03em;
     margin-bottom: 20px;
-    font-family: 'DM Sans', sans-serif;
 }
-.landing-headline em {
-    color: var(--accent-text); font-style: normal;
-    background: linear-gradient(90deg, #34D399, #10B981);
-    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-    background-clip: text;
-}
+.landing-headline em { color: var(--accent-text); font-style: normal; }
 .landing-sub {
-    font-size: 1.05rem; color: var(--text-secondary);
+    font-size: 1.0rem; color: var(--text-secondary);
     max-width: 480px; line-height: 1.75; margin-bottom: 40px;
-    font-family: 'DM Sans', sans-serif;
 }
 .landing-trust-strip {
-    display: flex; gap: 20px; align-items: center;
-    margin-top: 40px; padding-top: 28px;
+    margin-top: 40px; padding-top: 20px;
     border-top: 1px solid var(--border);
-    flex-wrap: wrap; justify-content: center;
 }
-.trust-item {
-    font-size: 0.72rem; color: var(--text-muted);
-    font-family: 'DM Mono', monospace;
-    letter-spacing: 0.04em;
+.trust-line {
+    font-size: 0.68rem; color: var(--text-muted);
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: 0.06em; text-transform: uppercase;
 }
-.trust-dot { color: var(--border); font-size: 1rem; }
 
-/* HOW IT WORKS — landing page 3-col strip */
+/* HOW IT WORKS */
 .how-section { padding: 16px 0 40px 0; }
 .how-step {
     background: var(--surface); border: 1px solid var(--border);
-    border-radius: 10px; padding: 24px 22px; height: 100%;
-    transition: border-color 0.15s;
+    border-radius: 4px; padding: 24px 22px; height: 100%;
 }
-.how-step:hover { border-color: #2A4060; }
 .hs-num {
     font-size: 0.68rem; font-weight: 700; color: var(--accent);
-    letter-spacing: 0.08em; font-family: 'DM Mono', monospace; margin-bottom: 10px;
+    letter-spacing: 0.08em; font-family: 'JetBrains Mono', monospace; margin-bottom: 10px;
 }
-.hs-label {
-    font-size: 0.88rem; font-weight: 600; color: var(--text-primary);
-    margin-bottom: 8px; font-family: 'DM Sans', sans-serif;
-}
-.hs-text { font-size: 0.8rem; color: var(--text-muted); line-height: 1.6; font-family: 'DM Sans', sans-serif; }
+.hs-label { font-size: 0.88rem; font-weight: 600; color: var(--text-primary); margin-bottom: 8px; }
+.hs-text { font-size: 0.8rem; color: var(--text-muted); line-height: 1.6; }
 
-/* =====================================================================
-   WIZARD NAV BAR
-   ===================================================================== */
+/* WIZARD NAV */
 .wn-brand {
-    font-size: 0.9rem; font-weight: 700;
-    background: linear-gradient(120deg, #F8FAFC 30%, #10B981 100%);
-    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-    background-clip: text; letter-spacing: -0.01em;
-    font-family: 'DM Sans', sans-serif; display: inline-block;
+    font-size: 0.82rem; font-weight: 700; letter-spacing: 0.06em;
+    text-transform: uppercase; color: var(--text-primary);
+    font-family: 'JetBrains Mono', monospace; display: inline-block;
 }
-.step-tracker { display: flex; gap: 8px; align-items: center; justify-content: center; }
-.step-dot {
-    width: 8px; height: 8px; border-radius: 50%; background: var(--border);
-    transition: background 0.2s;
+.step-nav { display: flex; gap: 0; align-items: center; justify-content: center; }
+.step-tab {
+    font-size: 0.72rem; font-weight: 500; color: var(--text-muted);
+    font-family: 'JetBrains Mono', monospace; letter-spacing: 0.03em;
+    padding: 6px 14px 8px 14px;
+    border-bottom: 2px solid transparent;
+    cursor: default; white-space: nowrap;
 }
-.step-dot.done   { background: var(--accent-mid); }
-.step-dot.active { background: var(--accent); box-shadow: 0 0 6px var(--accent); }
-.step-label {
-    font-size: 0.72rem; color: var(--text-muted);
-    font-family: 'DM Mono', monospace; letter-spacing: 0.03em; margin-left: 6px;
+.step-tab.done { color: var(--text-secondary); }
+.step-tab.active {
+    color: var(--text-primary);
+    border-bottom-color: var(--accent);
+    font-weight: 600;
 }
 
 /* STEP SCREENS */
 .step-heading {
     font-size: 1.6rem; font-weight: 700; color: var(--text-primary);
-    font-family: 'DM Sans', sans-serif; letter-spacing: -0.02em;
-    margin-bottom: 10px; line-height: 1.15;
+    letter-spacing: -0.02em; margin-bottom: 10px; line-height: 1.15;
 }
 .step-sub {
     font-size: 0.92rem; color: var(--text-secondary);
     line-height: 1.7; margin-bottom: 28px;
-    font-family: 'DM Sans', sans-serif;
 }
+
+/* E-SHOP RUNNING ROW */
+.eshop-running-row {
+    font-size: 0.82rem; color: var(--text-secondary);
+    font-family: 'JetBrains Mono', monospace;
+    padding: 14px 0;
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 20px;
+    display: flex; align-items: center; gap: 10px;
+}
+.eshop-running-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--accent); flex-shrink: 0;
+    animation: pulse-dot 1.8s ease-in-out infinite;
+}
+@keyframes pulse-dot {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+}
+.eshop-running-row a { color: var(--accent); text-decoration: none; }
+.eshop-running-row a:hover { text-decoration: underline; }
 
 /* Results mode toggle */
 [data-testid="stToggle"] label {
-    font-size: 0.78rem !important;
-    font-family: 'DM Mono', monospace !important;
+    font-size: 0.75rem !important;
+    font-family: 'JetBrains Mono', monospace !important;
     color: var(--text-secondary) !important;
-    letter-spacing: 0.04em !important;
+    letter-spacing: 0.05em !important;
     text-transform: uppercase !important;
 }
 </style>
@@ -461,16 +427,12 @@ def _go(screen: str) -> None:
 # Wizard nav bar  (used on upload / fetch / results screens)
 # ---------------------------------------------------------------------------
 def _render_wizard_nav(step: int) -> None:
-    step_labels = {
-        1: "Step 1 of 4 — Load Catalog",
-        2: "Step 2 of 4 — Fetch Prices",
-        3: "Step 3 of 4 — Your Results",
-        4: "Step 4 of 4 — Build E-Shop",
-    }
+    step_labels = ["Load Catalog", "Fetch Prices", "Your Results", "Build E-Shop"]
 
-    dots_html = "".join(
-        f'<span class="step-dot {("active" if i == step else "done" if i < step else "")}"></span>'
-        for i in range(1, 5)
+    tabs_html = "".join(
+        f'<span class="step-tab {("active" if i + 1 == step else "done" if i + 1 < step else "")}">'
+        f'{str(i + 1).zfill(2)}&nbsp;{label}</span>'
+        for i, label in enumerate(step_labels)
     )
 
     col_l, col_c, col_r = st.columns([1, 3, 1])
@@ -479,12 +441,7 @@ def _render_wizard_nav(step: int) -> None:
         st.markdown('<div class="wn-brand">Spreadshop</div>', unsafe_allow_html=True)
 
     with col_c:
-        st.markdown(f"""
-        <div style="display:flex;align-items:center;justify-content:center;gap:10px;padding-top:4px;">
-          <div class="step-tracker">{dots_html}</div>
-          <span class="step-label">{step_labels.get(step, "")}</span>
-        </div>
-        """, unsafe_allow_html=True)
+        st.markdown(f'<div class="step-nav">{tabs_html}</div>', unsafe_allow_html=True)
 
     with col_r:
         if step == 3:
@@ -516,7 +473,7 @@ def _render_landing() -> None:
     # Hero copy
     st.markdown("""
     <div class="landing-hero">
-      <div class="landing-wordmark">Spreadshop &mdash; GR Market Intelligence</div>
+      <div class="landing-wordmark">Spreadshop &nbsp;&middot;&nbsp; GR Market Intelligence</div>
       <div class="landing-headline">Find the profit hiding in<br>your supplier&rsquo;s <em>catalog</em>.</div>
       <div class="landing-sub">
         Upload a wholesale price list. We match every product against live
@@ -543,13 +500,7 @@ def _render_landing() -> None:
     # Trust strip
     st.markdown("""
     <div class="landing-trust-strip">
-      <span class="trust-item">Live Skroutz.gr data</span>
-      <span class="trust-dot">·</span>
-      <span class="trust-item">XLSX &amp; PDF catalogs</span>
-      <span class="trust-dot">·</span>
-      <span class="trust-item">Greek market focus</span>
-      <span class="trust-dot">·</span>
-      <span class="trust-item">Export to XLSX</span>
+      <div class="trust-line">Live Skroutz.gr &nbsp;&middot;&nbsp; XLSX &amp; PDF &nbsp;&middot;&nbsp; Greek Market &nbsp;&middot;&nbsp; Export XLSX</div>
     </div>
     """, unsafe_allow_html=True)
 
@@ -966,7 +917,7 @@ def _render_results() -> None:
         card_extra = "strong-buy" if a.recommendation == "strong_buy" else ""
         link = (
             f'<a href="{s.product_url}" target="_blank" '
-            f'style="font-size:0.72rem;color:#3B82F6;text-decoration:none;">↗ Skroutz</a>'
+            f'style="font-size:0.72rem;color:var(--accent);text-decoration:none;">↗ Skroutz</a>'
             if s.found and s.product_url else ""
         )
         mg_str = f"{a.margin_pct:+.1f}%" if s.found else "—"
@@ -1060,20 +1011,14 @@ def _render_results() -> None:
     if invest > 0:
         roi = (profit / invest) * 100
         st.markdown(f"""
-        <div class="invest-box">
-          <div class="invest-box-title">Investment Summary &mdash; Strong Buy Products ({len(strong)} items)</div>
-          <div class="invest-main-row">
-            <div class="invest-block">
-              <div class="ib-label">Wholesale Cost</div>
-              <div class="ib-value">&euro;{invest:,.2f}</div>
-            </div>
-            <div class="invest-arrow">&rarr;</div>
-            <div class="invest-block">
-              <div class="ib-label">Gross Profit</div>
-              <div class="ib-value green">&euro;{profit:,.2f}</div>
-            </div>
-            <div class="invest-roi">{roi:.1f}% ROI</div>
-          </div>
+        <div class="invest-row">
+          Cost <strong>&euro;{invest:,.2f}</strong>
+          &nbsp;&middot;&nbsp;
+          Gross profit <span class="ir-accent">&euro;{profit:,.2f}</span>
+          &nbsp;&middot;&nbsp;
+          ROI <strong>{roi:.1f}%</strong>
+          &nbsp;&middot;&nbsp;
+          {len(strong)} strong buy products
         </div>
         """, unsafe_allow_html=True)
 
@@ -1094,17 +1039,17 @@ def _render_results() -> None:
             fig_bar = px.bar(
                 cat_rows, x="Avg Margin %", y="Category", orientation="h",
                 color="Avg Margin %",
-                color_continuous_scale=["#EF4444", "#F59E0B", "#10B981"],
+                color_continuous_scale=["#4A5160", "#10B981"],
                 template="plotly_dark",
                 height=max(260, len(cat_rows) * 34 + 60),
             )
             fig_bar.update_layout(
                 margin=dict(l=0, r=0, t=0, b=0),
-                paper_bgcolor="#0F1623", plot_bgcolor="#0A0F1E",
+                paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
                 coloraxis_showscale=False,
-                font=dict(family="DM Sans, sans-serif", size=11, color="#94A3B8"),
-                yaxis=dict(autorange="reversed", gridcolor="#1E2D45"),
-                xaxis=dict(gridcolor="#1E2D45", zeroline=False),
+                font=dict(family="Inter Tight, sans-serif", size=11, color="#7D8590"),
+                yaxis=dict(autorange="reversed", gridcolor="#1F242C"),
+                xaxis=dict(gridcolor="#1F242C", zeroline=False),
             )
             fig_bar.update_traces(marker_line_width=0)
             st.plotly_chart(fig_bar, use_container_width=True)
@@ -1115,13 +1060,13 @@ def _render_results() -> None:
             comp_df  = [{"Level": k, "Count": v} for k, v in comp_cnt.items()]
             fig_pie = px.pie(
                 comp_df, names="Level", values="Count", color="Level",
-                color_discrete_map={"Low": "#10B981", "Medium": "#F59E0B", "High": "#EF4444"},
+                color_discrete_map={"Low": "#10B981", "Medium": "#7D8590", "High": "#4A5160"},
                 template="plotly_dark", hole=0.44, height=290,
             )
             fig_pie.update_layout(
                 margin=dict(l=0, r=0, t=0, b=30),
-                paper_bgcolor="#0F1623",
-                font=dict(family="DM Sans, sans-serif", size=11, color="#94A3B8"),
+                paper_bgcolor="rgba(0,0,0,0)",
+                font=dict(family="Inter Tight, sans-serif", size=11, color="#7D8590"),
                 legend=dict(orientation="h", y=-0.12, bgcolor="rgba(0,0,0,0)"),
             )
             fig_pie.update_traces(textinfo="percent+label", textfont_size=11)
@@ -1160,47 +1105,36 @@ def _render_results() -> None:
     st.markdown(f"**{len(filtered_a)} products** matching filters")
     st.markdown("""
     <div style="display:flex;gap:12px;flex-wrap:wrap;margin:6px 0 18px 0;align-items:center;">
-      <span style="font-size:0.72rem;font-family:'DM Sans',sans-serif;color:var(--text-secondary);">
+      <span style="font-size:0.72rem;color:var(--text-secondary);">
         <span style="color:var(--accent-text);font-weight:600;">&#9679; Strong Buy</span> &mdash; margin &ge;30%, few competitors. Stock these.
       </span>
       <span style="font-size:0.72rem;color:var(--border);">|</span>
-      <span style="font-size:0.72rem;font-family:'DM Sans',sans-serif;color:var(--text-secondary);">
+      <span style="font-size:0.72rem;color:var(--text-secondary);">
         <span style="color:var(--warn);font-weight:600;">&#9679; Consider</span> &mdash; margin &ge;15%, moderate competition. Worth a small order.
       </span>
       <span style="font-size:0.72rem;color:var(--border);">|</span>
-      <span style="font-size:0.72rem;font-family:'DM Sans',sans-serif;color:var(--text-secondary);">
-        <span style="color:var(--danger);font-weight:600;">&#9679; Skip</span> &mdash; low margin or too many competitors. Avoid.
+      <span style="font-size:0.72rem;color:var(--text-secondary);">
+        <span style="color:var(--text-muted);font-weight:600;">&#9679; Skip</span> &mdash; low margin or too many competitors. Avoid.
       </span>
     </div>
     """, unsafe_allow_html=True)
 
-    # ---- Summary boxes ----
+    # ---- Stat strip ----
     sb_strong = [a for a in filtered_a if a.recommendation == "strong_buy"]
     sb_invest = sum(a.product.wholesale_price for a in sb_strong)
     sb_profit = sum(a.margin_absolute for a in sb_strong if a.skroutz.found)
     found_f   = [a for a in filtered_a if a.skroutz.found]
     avg_mg_a  = sum(a.margin_pct for a in found_f) / len(found_f) if found_f else 0
 
-    bs1, bs2, bs3 = st.columns(3)
-    bs1.markdown(f"""
-    <div class="summary-box">
-      <div class="sb-value">{len(sb_strong)}</div>
-      <div class="sb-label">Strong Buy Products</div>
-      <div class="sb-sub">Stock cost: <strong>€{sb_invest:,.2f}</strong></div>
-    </div>
-    """, unsafe_allow_html=True)
-    bs2.markdown(f"""
-    <div class="summary-box">
-      <div class="sb-value green">€{sb_profit:,.2f}</div>
-      <div class="sb-label">Potential Gross Profit</div>
-      <div class="sb-sub">From strong-buy items in current filter</div>
-    </div>
-    """, unsafe_allow_html=True)
-    bs3.markdown(f"""
-    <div class="summary-box">
-      <div class="sb-value">{avg_mg_a:.1f}%</div>
-      <div class="sb-label">Avg Gross Margin</div>
-      <div class="sb-sub">{len(found_f)} of {len(filtered_a)} products found on market</div>
+    st.markdown(f"""
+    <div class="stat-strip">
+      <strong>{len(sb_strong)}</strong> strong buy
+      <span class="stat-sep">│</span>
+      pot. profit <span class="stat-accent">&euro;{sb_profit:,.2f}</span>
+      <span class="stat-sep">│</span>
+      avg margin <strong>{avg_mg_a:.1f}%</strong>
+      <span class="stat-sep">│</span>
+      {len(found_f)} of {len(filtered_a)} found on market
     </div>
     """, unsafe_allow_html=True)
 
@@ -1253,7 +1187,7 @@ def _render_results() -> None:
                 format="%.1f%%",
                 help="Your gross margin if you sell at the cheapest price",
             ),
-            "Rating":  st.column_config.NumberColumn(format="⭐ %.1f"),
+            "Rating":  st.column_config.NumberColumn(format="%.1f"),
             "Score":   st.column_config.ProgressColumn(min_value=0, max_value=100, format="%.0f"),
             "Link":    st.column_config.LinkColumn("Skroutz Link"),
         },
@@ -1274,7 +1208,7 @@ def _render_results() -> None:
             for a in filtered_a if a.skroutz.found
         ]
         if scatter_data:
-            cmap = {"Strong Buy": "#10B981", "Consider": "#D97706", "Skip": "#DC2626", "Not Found": "#364C63"}
+            cmap = {"Strong Buy": "#10B981", "Consider": "#7D8590", "Skip": "#4A5160", "Not Found": "#2A2F37"}
             fig_sc = px.scatter(
                 scatter_data, x="Shop Count", y="Margin %",
                 size="Score", color="Rec", color_discrete_map=cmap,
@@ -1289,12 +1223,12 @@ def _render_results() -> None:
                 annotation_font_color="rgba(16,185,129,0.60)",
             )
             fig_sc.update_layout(
-                paper_bgcolor="#0F1623", plot_bgcolor="#0A0F1E",
-                font=dict(family="DM Sans, sans-serif", size=11, color="#94A3B8"),
+                paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+                font=dict(family="Inter Tight, sans-serif", size=11, color="#7D8590"),
                 legend=dict(orientation="h", y=1.05, x=0, bgcolor="rgba(0,0,0,0)"),
                 margin=dict(l=0, r=0, t=30, b=0),
-                xaxis=dict(gridcolor="#1E2D45", zeroline=False),
-                yaxis=dict(gridcolor="#1E2D45", zeroline=True, zerolinecolor="#1E2D45"),
+                xaxis=dict(gridcolor="#1F242C", zeroline=False),
+                yaxis=dict(gridcolor="#1F242C", zeroline=True, zerolinecolor="#1F242C"),
             )
             st.plotly_chart(fig_sc, use_container_width=True)
             st.caption("Bubble size = opportunity score. Best picks: upper-left (high margin, few competitors).")
@@ -1530,19 +1464,9 @@ def _render_eshop() -> None:
         eshop_url = ss.get("eshop_url", f"http://localhost:{ESHOP_PORT}")
 
         st.markdown(f"""
-        <div style="background:var(--accent-dim);border:1px solid var(--accent-mid);border-radius:12px;
-                    padding:20px 24px;margin-bottom:24px;">
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-            <span style="color:var(--accent);font-size:1.1rem;">&#9679;</span>
-            <span style="color:var(--accent-text);font-weight:700;font-family:'DM Mono',monospace;
-                         font-size:0.85rem;letter-spacing:0.03em;">E-SHOP RUNNING</span>
-          </div>
-          <div style="font-size:0.9rem;color:var(--text-secondary);margin-bottom:8px;">Preview URL:</div>
-          <a href="{eshop_url}" target="_blank"
-             style="font-family:'DM Mono',monospace;font-size:1rem;color:var(--accent-text);
-                    text-decoration:none;font-weight:600;">
-            {eshop_url} ↗
-          </a>
+        <div class="eshop-running-row">
+          <div class="eshop-running-dot"></div>
+          <span>running &middot; preview at <a href="{eshop_url}" target="_blank">{eshop_url}&nbsp;&nearr;</a></span>
         </div>
         """, unsafe_allow_html=True)
 

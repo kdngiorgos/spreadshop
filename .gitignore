@@ -12,6 +12,8 @@ venv/
 # App-generated directories
 cache/
 reports/
+logs/
+eshop_preview_*/
 
 # OS / editor
 .DS_Store
